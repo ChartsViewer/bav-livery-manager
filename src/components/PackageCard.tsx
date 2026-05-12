@@ -1,7 +1,8 @@
-import {useState} from 'react';
+import React, {useState} from 'react';
 import type {Package, PackageDownloadState} from '@/types/package';
 import type {Livery, Simulator} from '@/types/livery';
 import styles from './PackageCard.module.css';
+import {useConfirmationStore} from "@/store/confirmationStore";
 
 interface PackageCardProps {
     pkg: Package;
@@ -72,10 +73,29 @@ export const PackageCard = ({
     const handleUninstallClick = async (sim: Simulator) => {
         const dependents = findDependentLiveries(sim);
         if (dependents.length > 0) {
-            const names = dependents.map((l) => l.name).join('\n  • ');
-            const confirmed = window.confirm(
-                `If you delete "${pkg.title}", the following installed livery${dependents.length > 1 ? 'ies' : ''} won’t work properly:\n\n  • ${names}\n\nDo you want to continue?`
-            );
+            const confirmed = await new Promise<boolean>((resolve) => {
+                useConfirmationStore.setState({
+                    isOpen: true,
+                    options: {
+                        title: 'Are you sure you want to continue?',
+                        message: React.createElement(
+                            React.Fragment,
+                            null,
+                            React.createElement('p', null, `If you delete "${pkg.title}", the following installed livery${dependents.length > 1 ? 'ies' : ''} won’t work properly:`),
+                            ...dependents.map((l) => React.createElement('p', null, React.createElement('strong', null, '• ' + l.name))),
+                            React.createElement('p', null, `Do you want to continue?`)
+                        ),
+                        confirmText: 'Delete',
+                        cancelText: 'Cancel',
+                        onConfirm: async () => {
+                            resolve(true);
+                        },
+                        onCancel: () => {
+                            resolve(false);
+                        }
+                    }
+                });
+            });
             if (!confirmed) return;
         }
         setBusy(true);

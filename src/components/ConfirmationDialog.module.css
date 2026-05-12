@@ -1,0 +1,199 @@
+.backdrop {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1001;
+    padding: 20px;
+    animation: fadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(2px);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+    }
+    to {
+        opacity: 1;
+        backdrop-filter: blur(2px);
+    }
+}
+
+.modal {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 480px;
+    overflow: hidden;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6),
+                0 0 1px rgba(255, 255, 255, 0.1) inset;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-origin: center bottom;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px) scale(0.95);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+.header {
+    padding: 14px;
+    border-bottom: 1px solid var(--border);
+}
+
+.headerContent {
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+}
+
+.icon {
+    color: var(--muted);
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+}
+
+.title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.4;
+}
+
+.body {
+    padding: 14px;
+    flex-grow: 1;
+}
+
+.message {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--muted);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.message p {
+    margin: 0 0 8px 0;
+    white-space: pre-wrap;
+}
+
+.message p:last-child {
+    margin-bottom: 0;
+}
+
+.message strong {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.message em {
+    color: rgba(255, 255, 255, 0.8);
+    font-style: italic;
+}
+
+.message ul,
+.message ol {
+    margin: 8px 0;
+    padding-left: 20px;
+}
+
+.message li {
+    margin: 4px 0;
+}
+
+.error {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-top: 20px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, rgba(255, 68, 68, 0.12) 0%, rgba(255, 68, 68, 0.06) 100%);
+    border: 1px solid rgba(255, 68, 68, 0.35);
+    border-radius: 10px;
+}
+
+.errorIcon {
+    color: #ff6b6b;
+    flex-shrink: 0;
+    margin-top: 2px;
+    width: 18px;
+    height: 18px;
+}
+
+.error span {
+    font-size: 13px;
+    color: #ff8787;
+    font-weight: 500;
+    line-height: 1.5;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 12px;
+    border-top: 1px solid var(--border);
+}
+
+.btnSecondary,
+.btnPrimary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 9px 16px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-weight: 500;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.btnSecondary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.btnSecondary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.btnPrimary {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.btnPrimary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+.btnPrimary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+
+
+

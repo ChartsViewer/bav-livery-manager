@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { create } from 'zustand';
+import React from 'react';
 import type {
     DownloadProgress,
     InstalledLiveryRecord,
@@ -11,6 +12,7 @@ import type {
 } from '@/types/livery';
 import { useAuthStore } from '@/store/authStore';
 import { usePackageStore } from '@/store/packageStore';
+import { useConfirmationStore } from '@/store/confirmationStore';
 import { buildDownloadRequestUrl, deriveInstallFolderName, joinPaths, normalizeRemoteLivery } from '@/utils/livery';
 import { REMOTE_LIVERY_LIST_URL, LIVERY_UPDATES_URL } from '@shared/constants';
 
@@ -444,9 +446,31 @@ export const useLiveryStore = create<LiveryState>((set, get) => {
                 const missing = requiredRefs.filter((ref) => !packageStore.isInstalled(ref.slug, simulator));
                 if (missing.length > 0) {
                     const names = missing.map((ref) => ref.title || ref.slug).join(', ');
-                    const confirmed = window.confirm(
-                        `This livery requires the following package${missing.length > 1 ? 's' : ''} to work correctly:\n\n${names}\n\nThey will be installed for ${simulator} first. Continue?`
-                    );
+
+                    const confirmed = await new Promise<boolean>((resolve) => {
+                        useConfirmationStore.setState({
+                            isOpen: true,
+                            options: {
+                                title: 'Required Packages',
+                                message: React.createElement(
+                                    React.Fragment,
+                                    null,
+                                    React.createElement('p', null, `This livery requires the following package${missing.length > 1 ? 's' : ''} to work correctly:`),
+                                    React.createElement('p', null, React.createElement('strong', null, names)),
+                                    React.createElement('p', null, `They will be installed for ${simulator}. Continue?`)
+                                ),
+                                confirmText: 'Install & Download',
+                                cancelText: 'Cancel',
+                                onConfirm: async () => {
+                                    resolve(true);
+                                },
+                                onCancel: () => {
+                                    resolve(false);
+                                }
+                            }
+                        });
+                    });
+
                     if (!confirmed) {
                         set({ error: 'Download cancelled: required packages were not approved.' });
                         return false;
