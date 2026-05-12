@@ -40,7 +40,8 @@ export const useLiveriesQuery = () => {
                 throw createStatusError(response.status, `Remote list request failed with status ${response.status}`);
             }
 
-            return response.json();
+            const body = (await response.json()) as { data?: RemoteLiveryPayload } | RemoteLiveryPayload;
+            return ('data' in (body as object) ? (body as { data: RemoteLiveryPayload }).data : body) as RemoteLiveryPayload;
         },
         select: (data) => (data.liveries ?? []).map((entry) => normalizeRemoteLivery(entry as Record<string, unknown>)),
         refetchOnWindowFocus: false,

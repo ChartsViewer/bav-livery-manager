@@ -119,23 +119,28 @@ export const useAuthStore = create<AuthState>()(
                         throw new Error(`Verification failed: ${response.status}`);
                     }
 
-                    const data = await response.json();
+                    const body = await response.json();
+                    const payload = body?.data ?? body;
+                    const user = payload?.user ?? payload ?? {};
+                    const firstName = user.firstName ?? '';
+                    const lastName = user.lastName ?? '';
+                    const composedFullName = `${firstName} ${lastName}`.trim();
+                    const totalDutyMins = user?.stats?.totalDutyMins;
 
-                    set({
-                        role: mapRole(data.role),
-                        userId: data.bawId ?? null,
-                        pilotId: data.pilotId ?? null,
-                        fullName: data.fullName ?? null,
-                        rank: data.rank ?? null,
-                        totalTimeMins: (() => {
-                            if (data.totalTime === undefined || data.totalTime === null) {
-                                return null;
-                            }
-                            const numeric = Number(data.totalTime);
-                            return Number.isFinite(numeric) ? numeric : null;
-                        })(),
+                    set((state) => ({
+                        role: mapRole(user.role) ?? state.role,
+                        userId: user.bawId ?? state.userId,
+                        pilotId: user.id != null ? String(user.id) : state.pilotId,
+                        fullName: composedFullName || state.fullName,
+                        rank: user?.rank?.name ?? state.rank,
+                        totalTimeMins: typeof totalDutyMins === 'number'
+                            ? totalDutyMins
+                            : state.totalTimeMins,
+                        totalFlights: typeof user?.stats?.totalFlights === 'number'
+                            ? user.stats.totalFlights
+                            : state.totalFlights,
                         status: 'idle'
-                    });
+                    }));
                 } catch (error) {
                     console.error('Failed to verify session:', error);
                     // Strict enforcement: if we can't verify, we assume invalid.

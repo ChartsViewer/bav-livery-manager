@@ -177,7 +177,7 @@ export function InformationPage() {
         if (!liveryId || !token) return;
         let aborted = false;
         setChangelogError(null);
-        fetch(`${PANEL_BASE_URL}/api/liveries/${liveryId}/changelog`, {
+        fetch(`${PANEL_BASE_URL}/api/v2/liveries/${liveryId}/changelog`, {
             headers: { Authorization: `Bearer ${token}` },
             cache: "no-store",
         })
@@ -185,8 +185,12 @@ export function InformationPage() {
                 if (!res.ok) throw new Error(`Status ${res.status}`);
                 return res.json();
             })
-            .then((data: ChangelogEntry[]) => {
-                if (!aborted) setChangelog(Array.isArray(data) ? data : []);
+            .then((body: { data?: { versions?: ChangelogEntry[] } } | ChangelogEntry[]) => {
+                if (aborted) return;
+                const versions = Array.isArray(body)
+                    ? body
+                    : body?.data?.versions ?? [];
+                setChangelog(versions);
             })
             .catch((err) => {
                 if (!aborted) setChangelogError(err instanceof Error ? err.message : "Failed to load changelog");

@@ -378,7 +378,7 @@ async function trackDownloadCompletion(
     authToken: string
 ): Promise<void> {
     const simCode = simulator === 'MSFS2024' ? 'FS24' : 'FS20';
-    const trackUrl = `${PANEL_BASE_URL}/api/simulator/liveries/${liveryId}/track`;
+    const trackUrl = `${PANEL_BASE_URL}/api/v2/simulator/liveries/${liveryId}/track`;
 
     try {
         const response = await fetchWithTimeout(trackUrl, {

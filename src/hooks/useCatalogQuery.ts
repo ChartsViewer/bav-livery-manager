@@ -25,7 +25,8 @@ export const useCatalogQuery = (token: string | null) => {
                 throw new Error(`Catalog request failed with status ${response.status}`);
             }
 
-            return response.json();
+            const body = (await response.json()) as { data?: CatalogResponse } | CatalogResponse;
+            return ('data' in (body as object) ? (body as { data: CatalogResponse }).data : body) as CatalogResponse;
         },
         staleTime: 15 * 60 * 1000,
         gcTime: 30 * 60 * 1000,

@@ -197,7 +197,8 @@ export const useLiveryStore = create<LiveryState>((set, get) => {
                         error.status = response.status;
                         throw error;
                     }
-                    const payload = await response.json();
+                    const body = await response.json();
+                    const payload = body?.data ?? body;
                     const normalized = (payload?.liveries ?? []).map((entry: Record<string, unknown>) => normalizeRemoteLivery(entry));
                     set({ liveries: normalized });
                 }
@@ -291,13 +292,23 @@ export const useLiveryStore = create<LiveryState>((set, get) => {
                     throw new Error(`Update check failed: ${response.statusText}`);
                 }
 
-                const data = await response.json() as { updates: Array<{
-                    liveryId: string;
-                    hasUpdate: boolean;
-                    latestVersion?: string;
-                    currentVersion: string;
-                    changelog?: string | null;
-                }> };
+                const body = await response.json() as {
+                    data?: { updates: Array<{
+                        liveryId: string;
+                        hasUpdate: boolean;
+                        latestVersion?: string;
+                        currentVersion: string;
+                        changelog?: string | null;
+                    }> };
+                    updates?: Array<{
+                        liveryId: string;
+                        hasUpdate: boolean;
+                        latestVersion?: string;
+                        currentVersion: string;
+                        changelog?: string | null;
+                    }>;
+                };
+                const data = body.data ?? { updates: body.updates ?? [] };
 
                 // Map updates to installed liveries — one entry per (liveryId, simulator) pair
                 // so that liveries installed for both FS20 and FS24 both receive updates.
