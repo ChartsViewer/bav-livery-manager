@@ -8,7 +8,7 @@ import {useState} from "react";
 import {useThemeStore} from "@/store/themeStore";
 
 const NAV_ITEMS = [
-    {label: 'Search', to: '/search', icon: 'search'},
+    {label: 'Liveries', to: '/search', icon: 'search'},
     {label: 'Packages', to: '/packages', icon: 'package'},
     {label: 'Updates', to: '/downloads', icon: 'download'},
     {label: 'Settings', to: '/settings', icon: 'settings'}
@@ -36,10 +36,7 @@ const Icon = ({name}: { name: string }) => {
             );
         default:
             return (
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-                    <circle cx="11" cy="11" r="8"/>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="m397-115-99-184-184-99 71-70 145 25 102-102-317-135 84-86 385 68 124-124q23-23 57-23t57 23q23 23 23 56.5T822-709L697-584l68 384-85 85-136-317-102 102 26 144-71 71Z"/></svg>
             );
     }
 };
