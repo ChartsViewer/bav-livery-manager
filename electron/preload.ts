@@ -4,6 +4,10 @@ import type { ElectronAPI } from '../src/types/electron-api';
 const INVOKE_CHANNELS = [
     'fetch-liveries',
     'download-livery',
+    'download-package',
+    'cancel-package-download',
+    'get-installed-packages',
+    'uninstall-package',
     'cancel-download',
     'uninstall-livery',
     'get-settings',
@@ -26,7 +30,7 @@ const INVOKE_CHANNELS = [
     'get-app-version'
 ] as const;
 
-const ON_CHANNELS = ['download-progress', 'auth-token', 'app-update-status'] as const;
+const ON_CHANNELS = ['download-progress', 'package-progress', 'auth-token', 'app-update-status'] as const;
 
 type InvokeChannel = typeof INVOKE_CHANNELS[number];
 type OnChannel = typeof ON_CHANNELS[number];
@@ -55,6 +59,22 @@ const api: ElectronAPI = {
     cancelDownload: (liveryId) => {
         ensureInvokeChannel('cancel-download');
         return ipcRenderer.invoke('cancel-download', liveryId);
+    },
+    downloadPackage: (downloadEndpoint, slug, title, version, simulator, authToken) => {
+        ensureInvokeChannel('download-package');
+        return ipcRenderer.invoke('download-package', downloadEndpoint, slug, title, version ?? null, simulator, authToken ?? null);
+    },
+    cancelPackageDownload: (slug) => {
+        ensureInvokeChannel('cancel-package-download');
+        return ipcRenderer.invoke('cancel-package-download', slug);
+    },
+    getInstalledPackages: () => {
+        ensureInvokeChannel('get-installed-packages');
+        return ipcRenderer.invoke('get-installed-packages');
+    },
+    uninstallPackage: (slug, simulator) => {
+        ensureInvokeChannel('uninstall-package');
+        return ipcRenderer.invoke('uninstall-package', slug, simulator);
     },
     uninstallLivery: (installPath) => {
         ensureInvokeChannel('uninstall-livery');
@@ -128,6 +148,19 @@ const api: ElectronAPI = {
     },
     removeAllDownloadProgressListeners: () => {
         ipcRenderer.removeAllListeners('download-progress');
+    },
+    onPackageProgress: (callback) => {
+        ensureOnChannel('package-progress');
+        ipcRenderer.removeAllListeners('package-progress');
+
+        if (callback && typeof callback === 'function') {
+            ipcRenderer.on('package-progress', (_event, data) => {
+                callback(data);
+            });
+        }
+    },
+    removeAllPackageProgressListeners: () => {
+        ipcRenderer.removeAllListeners('package-progress');
     },
     onAuthToken: (callback) => {
         ensureOnChannel('auth-token');

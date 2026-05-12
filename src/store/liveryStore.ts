@@ -10,6 +10,7 @@ import type {
     Simulator
 } from '@/types/livery';
 import { useAuthStore } from '@/store/authStore';
+import { usePackageStore } from '@/store/packageStore';
 import { buildDownloadRequestUrl, deriveInstallFolderName, joinPaths, normalizeRemoteLivery } from '@/utils/livery';
 import { REMOTE_LIVERY_LIST_URL, LIVERY_UPDATES_URL } from '@shared/constants';
 
@@ -431,6 +432,51 @@ export const useLiveryStore = create<LiveryState>((set, get) => {
             if (hasHighResolutionConflict(livery, resolution, simulator)) {
                 set({ error: 'Please uninstall the other high-resolution variant (4K or 8K) before installing this one.' });
                 return false;
+            }
+
+            // Resolve required-package dependencies before kicking off the livery download.
+            // We ask the user once per missing dependency batch — cancel here cancels the
+            // whole download (the livery itself is the user-visible action).
+            const requiredRefs = (livery.requiredPackagesResolved ?? []).filter((ref) => ref.slug && ref.downloadEndpoint);
+            if (requiredRefs.length > 0) {
+                const packageStore = usePackageStore.getState();
+                await packageStore.refreshInstalled();
+                const missing = requiredRefs.filter((ref) => !packageStore.isInstalled(ref.slug, simulator));
+                if (missing.length > 0) {
+                    const names = missing.map((ref) => ref.title || ref.slug).join(', ');
+                    const confirmed = window.confirm(
+                        `This livery requires the following package${missing.length > 1 ? 's' : ''} to work correctly:\n\n${names}\n\nThey will be installed for ${simulator} first. Continue?`
+                    );
+                    if (!confirmed) {
+                        set({ error: 'Download cancelled: required packages were not approved.' });
+                        return false;
+                    }
+
+                    for (const ref of missing) {
+                        const success = await usePackageStore.getState().handleDownload(
+                            {
+                                id: ref.slug,
+                                slug: ref.slug,
+                                title: ref.title ?? ref.slug,
+                                description: null,
+                                category: null,
+                                version: ref.version ?? null,
+                                sizeBytes: ref.sizeBytes ?? null,
+                                previewUrl: null,
+                                aircraftProfileName: null,
+                                simulatorCode: null,
+                                tags: [],
+                                updatedAt: null,
+                                downloadEndpoint: ref.downloadEndpoint as string
+                            },
+                            simulator
+                        );
+                        if (!success) {
+                            set({ error: `Failed to install required package "${ref.title ?? ref.slug}". Livery download aborted.` });
+                            return false;
+                        }
+                    }
+                }
             }
 
             const downloadRequestUrl = buildDownloadRequestUrl(livery, resolution, simulator);

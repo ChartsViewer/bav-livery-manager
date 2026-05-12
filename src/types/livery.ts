@@ -1,6 +1,14 @@
 export type Resolution = '4K' | '8K';
 export type Simulator = 'FS20' | 'FS24';
 
+export interface RequiredPackageRef {
+    slug: string;
+    title?: string | null;
+    version?: string | null;
+    sizeBytes?: number | null;
+    downloadEndpoint?: string | null;
+}
+
 export interface Livery {
     id: string;
     name: string;
@@ -29,6 +37,8 @@ export interface Livery {
     status?: string;
     categoryId?: string | null;
     categoryName?: string | null;
+    requiredPackages?: string[];
+    requiredPackagesResolved?: RequiredPackageRef[];
 }
 
 export interface Settings {

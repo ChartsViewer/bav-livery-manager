@@ -8,6 +8,15 @@ interface DownloadProgressEvent {
     extracting?: boolean;
 }
 
+interface PackageProgressEvent {
+    slug: string;
+    title: string;
+    progress: number;
+    downloaded?: number;
+    total?: number;
+    extracting?: boolean;
+}
+
 interface DownloadResult {
     success: boolean;
     path?: string;
@@ -43,6 +52,17 @@ export interface AppUpdateStatus {
     error?: string;
 }
 
+/** Record of an installed package from the local store */
+export interface InstalledPackageRecord {
+    slug: string;
+    title: string;
+    folderName: string;
+    installPath: string;
+    simulator: string;
+    installDate: string;
+    version?: string | null;
+}
+
 /** Record of an installed livery from the local store */
 export interface InstalledLiveryRecord {
     liveryId: string;
@@ -68,6 +88,17 @@ export interface ElectronAPI {
         authToken?: string | null
     ) => Promise<DownloadResult>;
     cancelDownload: (liveryId: string) => Promise<boolean>;
+    downloadPackage: (
+        downloadEndpoint: string,
+        slug: string,
+        title: string,
+        version: string | null,
+        simulator: 'MSFS2020' | 'MSFS2024',
+        authToken?: string | null
+    ) => Promise<DownloadResult>;
+    cancelPackageDownload: (slug: string) => Promise<boolean>;
+    getInstalledPackages: () => Promise<InstalledPackageRecord[]>;
+    uninstallPackage: (slug: string, simulator: string) => Promise<{ success: boolean; error?: string }>;
     uninstallLivery: (installPath: string) => Promise<{ success: boolean; error?: string }>;
     getSettings: () => Promise<Settings>;
     saveSettings: (settings: Settings) => Promise<boolean>;
@@ -83,6 +114,8 @@ export interface ElectronAPI {
     setWindowTitle: (title: string) => Promise<void>;
     onDownloadProgress: (callback: ((event: DownloadProgressEvent) => void) | null) => void;
     removeAllDownloadProgressListeners: () => void;
+    onPackageProgress: (callback: ((event: PackageProgressEvent) => void) | null) => void;
+    removeAllPackageProgressListeners: () => void;
     openPanelAuth: (url: string) => Promise<void>;
     openExternalLink: (url: string) => Promise<void>;
     onAuthToken: (callback: ((payload: AuthTokenPayload) => void) | null) => void;

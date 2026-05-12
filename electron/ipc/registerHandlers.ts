@@ -5,14 +5,19 @@ import type { OpenDialogOptions } from 'electron';
 import type { AppContext, DownloadResult, Settings } from '../types';
 import { detectSimulatorPaths } from '../services/simulatorPaths';
 import { fetchRemoteLiveryList } from '../services/liveryData';
-import { downloadAndInstallLivery, cancelDownload } from '../services/downloadManager';
+import { downloadAndInstallLivery, cancelDownload, downloadAndInstallPackage, cancelPackageDownload } from '../services/downloadManager';
 import { isSimulatorRunning } from '../services/simulatorMonitor';
 import { loadSettings, saveSettings } from '../services/settingsStore';
-import { 
-    getInstalledLiveries, 
+import {
+    getInstalledLiveries,
     removeInstallationByPath,
-    validateInstallations 
+    validateInstallations
 } from '../services/installedLiveriesStore';
+import {
+    getInstalledPackages,
+    removePackageInstallation,
+    validatePackageInstallations
+} from '../services/installedPackagesStore';
 import { fetchWithTimeout } from '../utils/network';
 import * as versionManager from '../versionManager';
 
@@ -82,6 +87,67 @@ export function registerIpcHandlers(appContext: AppContext) {
 
     ipcMain.handle('cancel-download', async (_event, liveryId: string) => {
         return cancelDownload(liveryId);
+    });
+
+    ipcMain.handle(
+        'download-package',
+        async (
+            _event,
+            downloadEndpoint: string,
+            slug: string,
+            title: string,
+            version: string | null,
+            simulator: 'MSFS2020' | 'MSFS2024',
+            authToken: string | null
+        ): Promise<DownloadResult> => {
+            const simulatorActive = await isSimulatorRunning();
+            if (simulatorActive) {
+                return {
+                    success: false,
+                    error: 'Microsoft Flight Simulator appears to be running. Please close the simulator before installing packages.'
+                } satisfies DownloadResult;
+            }
+
+            const settings = loadSettings();
+            return downloadAndInstallPackage({
+                downloadEndpoint,
+                slug,
+                title,
+                version,
+                simulator,
+                settings,
+                appContext,
+                authToken
+            });
+        }
+    );
+
+    ipcMain.handle('cancel-package-download', async (_event, slug: string) => {
+        return cancelPackageDownload(slug);
+    });
+
+    ipcMain.handle('get-installed-packages', async () => {
+        try {
+            await validatePackageInstallations();
+            return getInstalledPackages();
+        } catch (error) {
+            console.error('Error getting installed packages:', error);
+            return [];
+        }
+    });
+
+    ipcMain.handle('uninstall-package', async (_event, slug: string, simulator: string) => {
+        try {
+            const record = await removePackageInstallation(slug, simulator);
+            if (!record) return { success: true };
+            if (await fs.pathExists(record.installPath)) {
+                await fs.remove(record.installPath);
+            }
+            return { success: true };
+        } catch (error) {
+            console.error('Failed to uninstall package:', error);
+            return { success: false, error: (error as Error).message };
+        }
     });
 
     ipcMain.handle('detect-sim-paths', async () => {

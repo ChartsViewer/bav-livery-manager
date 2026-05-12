@@ -1,8 +1,9 @@
 import { useLiveryStore } from '@/store/liveryStore';
+import { usePackageStore } from '@/store/packageStore';
 import styles from './DownloadProgress.module.css';
 import {Download} from "react-feather";
 import type {DownloadProgress as DownloadProgressType} from "@/types/livery";
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 interface DownloadProgressProps {
     isCollapsed: boolean;
@@ -105,8 +106,24 @@ const DownloadsInformation = ({entries}: DownloadsInformation) => {
 }
 
 export const DownloadProgress = ({isCollapsed, isExpanding}: DownloadProgressProps) => {
-    const downloadStates = useLiveryStore((state) => state.downloadStates);
-    const entries = Object.entries(downloadStates);
+    const liveryStates = useLiveryStore((state) => state.downloadStates);
+    const packageStates = usePackageStore((state) => state.downloadStates);
+    const entries = useMemo<[string, DownloadProgressType][]>(() => {
+        const merged: [string, DownloadProgressType][] = Object.entries(liveryStates);
+        Object.values(packageStates).forEach((pkg) => {
+            merged.push([
+                `📦 ${pkg.title}`,
+                {
+                    progress: pkg.progress,
+                    downloaded: pkg.downloaded,
+                    total: pkg.total,
+                    extracting: pkg.extracting,
+                    simulator: pkg.simulator
+                }
+            ]);
+        });
+        return merged;
+    }, [liveryStates, packageStates]);
     const [isHovered, setIsHovered] = useState(false);
 
     if (isExpanding) {

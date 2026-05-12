@@ -1,4 +1,4 @@
-import type { Livery, Resolution, Simulator } from '@/types/livery';
+import type { Livery, RequiredPackageRef, Resolution, Simulator } from '@/types/livery';
 import { PANEL_BASE_URL } from '@shared/constants';
 
 const asString = (value: unknown): string | null => {
@@ -44,7 +44,19 @@ export const normalizeRemoteLivery = (entry: Record<string, unknown>): Livery =>
         tags: Array.isArray(entry.tags) ? (entry.tags as string[]) : [],
         status: asString(entry.status) ?? undefined,
         categoryId: asString(entry.categoryId),
-        categoryName: asString(entry.categoryName)
+        categoryName: asString(entry.categoryName),
+        requiredPackages: Array.isArray(entry.requiredPackages)
+            ? (entry.requiredPackages as unknown[]).filter((v): v is string => typeof v === 'string')
+            : [],
+        requiredPackagesResolved: Array.isArray(entry.requiredPackagesResolved)
+            ? (entry.requiredPackagesResolved as Array<Record<string, unknown>>).map((ref): RequiredPackageRef => ({
+                slug: asString(ref.slug) ?? '',
+                title: asString(ref.title),
+                version: asString(ref.version),
+                sizeBytes: typeof ref.sizeBytes === 'number' ? ref.sizeBytes : null,
+                downloadEndpoint: asString(ref.downloadEndpoint)
+            })).filter((ref) => ref.slug.length > 0)
+            : []
     };
 };
 

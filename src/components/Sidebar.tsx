@@ -3,12 +3,13 @@ import {DownloadProgress} from './DownloadProgress';
 import {UpdateBadge} from './UpdateBadge';
 import {APP_VERSION} from '@/constants/appVersion';
 import styles from './Sidebar.module.css';
-import {RotateCw} from 'react-feather';
+import {Package as PackageIcon, RotateCw} from 'react-feather';
 import {useState} from "react";
 import {useThemeStore} from "@/store/themeStore";
 
 const NAV_ITEMS = [
     {label: 'Search', to: '/search', icon: 'search'},
+    {label: 'Packages', to: '/packages', icon: 'package'},
     {label: 'Updates', to: '/downloads', icon: 'download'},
     {label: 'Settings', to: '/settings', icon: 'settings'}
 ];
@@ -20,6 +21,10 @@ const Icon = ({name}: { name: string }) => {
         case 'download':
             return (
                 <RotateCw/>
+            );
+        case 'package':
+            return (
+                <PackageIcon/>
             );
         case 'settings':
             return (

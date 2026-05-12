@@ -5,6 +5,7 @@ import * as fs from 'fs-extra';
 import type { AppContext, DownloadProgress, DownloadResult, Settings } from '../types';
 import { fetchJson, fetchWithTimeout } from '../utils/network';
 import { recordInstallation } from './installedLiveriesStore';
+import { recordPackageInstallation } from './installedPackagesStore';
 import { PANEL_BASE_URL } from '../../shared/constants';
 import extract from 'extract-zip';
 import { processLayout } from 'msfs-layout-generator';
@@ -28,6 +29,35 @@ const RESOLVE_ATTEMPTS = 2;
 const BACKOFF_MS = 800;
 
 const INVALID_FILENAME_CHARS = /[<>:"/\\|?*]+/g;
+
+/**
+ * The panel hands out download endpoints built from its own request URL. Behind
+ * a reverse proxy that can come out as `http://localhost:3000`, which the
+ * Electron process can't reach. Rewrite local hosts to our configured
+ * PANEL_BASE_URL so the manager always hits the right origin.
+ */
+function normalizeEndpointHost(endpoint: string): string {
+    let url: URL;
+    try {
+        url = new URL(endpoint);
+    } catch {
+        try {
+            url = new URL(endpoint, PANEL_BASE_URL);
+        } catch {
+            return endpoint;
+        }
+    }
+    const host = url.hostname.toLowerCase();
+    if (/^(localhost|127(?:\.[0-9]{1,3}){3}|0\.0\.0\.0)$/.test(host)) {
+        try {
+            const base = new URL(PANEL_BASE_URL);
+            return new URL(url.pathname + url.search + url.hash, base.toString()).toString();
+        } catch {
+            return url.toString();
+        }
+    }
+    return url.toString();
+}
 
 const DUMMY_PMDG_MANIFEST = {
   "dependencies": [],
@@ -81,6 +111,135 @@ async function retryAsync<T>(
         }
     }
     throw lastError ?? new Error('retryAsync failed');
+}
+
+export function cancelPackageDownload(slug: string): boolean {
+    return cancelDownload(`pkg:${slug}`);
+}
+
+interface DownloadPackageOptions {
+    downloadEndpoint: string;
+    slug: string;
+    title: string;
+    version?: string | null;
+    simulator: 'MSFS2020' | 'MSFS2024';
+    settings: Settings;
+    appContext: AppContext;
+    authToken: string | null;
+}
+
+export async function downloadAndInstallPackage(options: DownloadPackageOptions): Promise<DownloadResult> {
+    const { downloadEndpoint, slug, title, version, simulator, settings, appContext, authToken } = options;
+    const endpoint = normalizeEndpointHost(downloadEndpoint);
+
+    if (!authToken) {
+        return { success: false, error: 'Missing authentication token. Please sign in again.' };
+    }
+
+    const baseFolder = simulator === 'MSFS2024' && settings.msfs2024Path ? settings.msfs2024Path : settings.msfs2020Path;
+    if (!baseFolder) {
+        return { success: false, error: 'No simulator path configured. Please set it in Settings.', path: '' };
+    }
+
+    await fs.ensureDir(baseFolder);
+
+    const abortController = new AbortController();
+    const downloadKey = `pkg:${slug}`;
+    activeDownloads.set(downloadKey, abortController);
+
+    let outputPath = '';
+    let extractPath = '';
+
+    try {
+        const signedDownload = await retryAsync(
+            () => resolveDownloadEndpoint(endpoint, authToken, abortController.signal),
+            RESOLVE_ATTEMPTS,
+            BACKOFF_MS,
+            abortController.signal
+        );
+        const downloadUrl = signedDownload.downloadUrl;
+
+        const zipFilename = deriveZipFilename(downloadUrl);
+        const folderName = zipFilename.replace(/\.zip$/i, '') || slug;
+        outputPath = path.join(baseFolder, zipFilename || `${slug}.zip`);
+        extractPath = path.join(baseFolder, folderName);
+        const simCode = simulator === 'MSFS2024' ? 'FS24' : 'FS20';
+
+        let lastProgressSentAt = 0;
+        const PROGRESS_THROTTLE_MS = 80;
+
+        await retryAsync(() => downloadFile(downloadUrl, outputPath, abortController.signal, (progress) => {
+            const now = Date.now();
+            if (now - lastProgressSentAt < PROGRESS_THROTTLE_MS && progress.percent < 100) {
+                return;
+            }
+            lastProgressSentAt = now;
+
+            const targetWindow = appContext.getMainWindow();
+            if (!targetWindow || targetWindow.isDestroyed()) return;
+
+            targetWindow.webContents.send('package-progress', {
+                slug,
+                title,
+                progress: progress.percent,
+                downloaded: progress.transferred,
+                total: progress.total
+            });
+
+            targetWindow.setProgressBar(progress.percent / 100, { mode: 'normal' });
+        }), DOWNLOAD_ATTEMPTS, BACKOFF_MS);
+
+        const targetWindow = appContext.getMainWindow();
+        if (targetWindow && !targetWindow.isDestroyed()) {
+            targetWindow.webContents.send('package-progress', {
+                slug,
+                title,
+                progress: 100,
+                extracting: true
+            });
+            targetWindow.setProgressBar(2, { mode: 'indeterminate' });
+        }
+
+        await extractZip(outputPath, extractPath);
+        await fs.remove(outputPath);
+
+        await recordPackageInstallation({
+            slug,
+            title,
+            folderName,
+            installPath: extractPath,
+            simulator: simCode,
+            version: version ?? null
+        });
+
+        const finalWindow = appContext.getMainWindow();
+        if (finalWindow && !finalWindow.isDestroyed()) {
+            finalWindow.setProgressBar(-1);
+        }
+
+        activeDownloads.delete(downloadKey);
+
+        return { success: true, path: extractPath };
+    } catch (error) {
+        activeDownloads.delete(downloadKey);
+
+        const errorWindow = appContext.getMainWindow();
+        if (errorWindow && !errorWindow.isDestroyed()) {
+            errorWindow.setProgressBar(-1);
+        }
+
+        if (abortController.signal.aborted) {
+            return { success: false, error: 'Download cancelled by user' };
+        }
+
+        console.error('Package download failed:', error);
+        const status = (error as Error & { status?: number }).status;
+        return {
+            success: false,
+            error: (error as Error).message,
+            details: typeof status === 'number' ? `Server responded with ${status}` : undefined
+        };
+    }
 }
 
 function deriveZipFilename(downloadUrl: string): string {
