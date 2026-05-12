@@ -323,7 +323,8 @@ interface SignedDownloadPayload {
 
 async function resolveDownloadEndpoint(endpoint: string, authToken: string | null, signal?: AbortSignal): Promise<SignedDownloadPayload> {
     const headers: HeadersInit = authToken ? { Authorization: `Bearer ${authToken}` } : {};
-    return fetchJson<SignedDownloadPayload>(endpoint, { headers, signal }, 15000);
+    const body = await fetchJson<{ data?: SignedDownloadPayload } & SignedDownloadPayload>(endpoint, { headers, signal }, 15000);
+    return body.data ?? body;
 }
 
 async function installPMDG(zipPath: string, extractPath: string, simulator: 'MSFS2020' | 'MSFS2024', aircraft: string, liveryDeveloper: string, liveryName: string, folderName: string) {
