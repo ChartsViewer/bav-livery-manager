@@ -148,7 +148,7 @@ export const FilterPanel = ({
                 />
                 <FilterItem
                     itemKey="category"
-                    label="Category"
+                    label="Subsidiary"
                     filterKey="category"
                     options={categoryOptions}
                     activeValue={filters.category}
