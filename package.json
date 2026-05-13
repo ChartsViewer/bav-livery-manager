@@ -51,7 +51,7 @@
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^6.0.1",
     "concurrently": "^9.2.1",
-    "cross-env": "^7.0.3",
+    "cross-env": "^10.1.0",
     "electron": "^42.0.1",
     "electron-builder": "^25.1.8",
     "icon-gen": "^5.0.0",
