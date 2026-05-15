@@ -69,6 +69,10 @@ export interface DownloadProgress {
     aircraft?: string;
     resolution?: string;
     simulator?: string;
+    dependencySlug?: string;
+    dependencyTitle?: string;
+    dependencyIndex?: number;
+    dependencyTotal?: number;
 }
 
 export interface LiveryUpdate {

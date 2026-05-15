@@ -23,7 +23,12 @@ interface DownloadsInformation {
     entries: [string, DownloadProgressType][]
 }
 
+const MAX_VISIBLE_ENTRIES = 2;
+
 const DownloadsInformation = ({entries}: DownloadsInformation) => {
+    const visibleEntries = entries.slice(0, MAX_VISIBLE_ENTRIES);
+    const overflowCount = Math.max(0, entries.length - MAX_VISIBLE_ENTRIES);
+
     if (entries.length === 0) {
         return (
             <div className={styles.container}>
@@ -47,13 +52,15 @@ const DownloadsInformation = ({entries}: DownloadsInformation) => {
             </div>
 
             <div className={styles.list}>
-                {entries.map(([name, state]) => {
+                {visibleEntries.map(([name, state]) => {
                     const infoParts = [
                         state.registration,
                         state.aircraft,
                         state.simulator,
                         state.resolution
                     ].filter(Boolean);
+                    const isQueued = Boolean(state.dependencyTitle);
+                    const barWidth = isQueued ? 0 : state.progress;
 
                     return (
                         <div key={name} className={styles.item}>
@@ -62,7 +69,11 @@ const DownloadsInformation = ({entries}: DownloadsInformation) => {
                                     {name}
                                 </span>
                                 <span className={styles.itemPercent}>
-                                    {state.extracting ? 'Installing' : `${Math.round(state.progress)}%`}
+                                    {isQueued
+                                        ? 'Queued'
+                                        : state.extracting
+                                            ? 'Installing'
+                                            : `${Math.round(state.progress)}%`}
                                 </span>
                             </div>
 
@@ -75,12 +86,16 @@ const DownloadsInformation = ({entries}: DownloadsInformation) => {
                             <div className={styles.progressTrack}>
                                 <div
                                     className={`${styles.progressBar} ${state.extracting ? styles.progressBarExtracting : ''}`}
-                                    style={{ width: `${state.progress}%` }}
+                                    style={{ width: `${barWidth}%` }}
                                 />
                             </div>
 
                             <div className={styles.itemMeta}>
-                                {state.extracting ? (
+                                {isQueued ? (
+                                    <span className={styles.extractingText}>
+                                        Waiting for required package: {state.dependencyTitle}
+                                    </span>
+                                ) : state.extracting ? (
                                     <span className={styles.extractingText}>Extracting files...</span>
                                 ) : state.downloaded !== undefined && state.total !== undefined ? (
                                     <>
@@ -94,6 +109,17 @@ const DownloadsInformation = ({entries}: DownloadsInformation) => {
                     );
                 })}
             </div>
+
+            {overflowCount > 0 && (
+                <div className={styles.moreRow} title={`${overflowCount} more in queue`}>
+                    <span className={styles.moreDots} aria-hidden>
+                        <span /><span /><span />
+                    </span>
+                    <span className={styles.moreLabel}>
+                        +{overflowCount} more {overflowCount === 1 ? 'item' : 'items'} installing
+                    </span>
+                </div>
+            )}
         </div>
     )
 }
@@ -102,20 +128,17 @@ export const DownloadProgress = ({isCollapsed, isExpanding}: DownloadProgressPro
     const liveryStates = useLiveryStore((state) => state.downloadStates);
     const packageStates = usePackageStore((state) => state.downloadStates);
     const entries = useMemo<[string, DownloadProgressType][]>(() => {
-        const merged: [string, DownloadProgressType][] = Object.entries(liveryStates);
-        Object.values(packageStates).forEach((pkg) => {
-            merged.push([
-                `📦 ${pkg.title}`,
-                {
-                    progress: pkg.progress,
-                    downloaded: pkg.downloaded,
-                    total: pkg.total,
-                    extracting: pkg.extracting,
-                    simulator: pkg.simulator
-                }
-            ]);
-        });
-        return merged;
+        const packages: [string, DownloadProgressType][] = Object.values(packageStates).map((pkg) => [
+            `📦 ${pkg.title}`,
+            {
+                progress: pkg.progress,
+                downloaded: pkg.downloaded,
+                total: pkg.total,
+                extracting: pkg.extracting,
+                simulator: pkg.simulator
+            }
+        ]);
+        return [...packages, ...Object.entries(liveryStates)];
     }, [liveryStates, packageStates]);
     const [isHovered, setIsHovered] = useState(false);
 

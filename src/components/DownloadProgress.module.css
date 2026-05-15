@@ -85,12 +85,10 @@
 .list {
     display: flex;
     flex-direction: column;
-    max-height: 180px;
-    overflow-y: auto;
 }
 
 .item {
-    padding: 10px 12px;
+    padding: 8px 12px;
     border-bottom: 1px solid var(--border);
 }
 
@@ -101,8 +99,9 @@
 .itemHeader {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 4px;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 2px;
 }
 
 .itemName {
@@ -119,12 +118,13 @@
     font-size: 0.7rem;
     font-weight: 600;
     color: #4a9eff;
+    flex-shrink: 0;
 }
 
 .itemInfo {
     font-size: 0.7rem;
     color: var(--muted);
-    margin-bottom: 6px;
+    margin-bottom: 4px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -170,10 +170,10 @@
     display: flex;
     align-items: center;
     gap: 3px;
-    margin-top: 4px;
+    margin-top: 3px;
     font-size: 0.65rem;
     color: var(--muted);
-    min-height: 14px;
+    min-height: 12px;
 }
 
 .separator {
@@ -213,8 +213,63 @@
     position: absolute;
     bottom: -20px;
     left: calc(100% + 15px);
-    width: 300px;
+    width: 320px;
     height: max-content;
     z-index: 1000;
     filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
+}
+
+/* "+N more installing" footer row */
+.moreRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-top: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.02);
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+}
+
+.moreLabel {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.moreDots {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.moreDots span {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #4a9eff;
+    opacity: 0.5;
+    animation: moreDotsPulse 1.2s ease-in-out infinite;
+}
+
+.moreDots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.moreDots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes moreDotsPulse {
+    0%, 100% {
+        opacity: 0.25;
+        transform: scale(0.85);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1);
+    }
 }

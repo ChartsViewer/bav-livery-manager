@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Livery, Resolution, Simulator } from '@/types/livery';
 import { useLiveryStore } from '@/store/liveryStore';
+import { usePackageStore } from '@/store/packageStore';
 import styles from './LiveryCard.module.css';
 import { Info } from 'react-feather';
 import { NavLink } from 'react-router-dom';
@@ -74,6 +75,10 @@ export const LiveryCard = ({
     }, []);
 
     const downloadState = useLiveryStore((state) => state.downloadStates[livery.name]);
+    const dependencySlug = downloadState?.dependencySlug;
+    const dependencyDownloadState = usePackageStore((state) =>
+        dependencySlug ? state.downloadStates[dependencySlug] : undefined
+    );
 
     const textColor = useThemeStore((state) => state.theme.text);
 
@@ -156,30 +161,53 @@ export const LiveryCard = ({
     return (
         <article className={styles.card} aria-label={`${livery.name} livery`}>
             <div className={styles.imageContainer}>
-                {downloadState && (
-                    <div className={classNames(styles.overlay, downloadState.extracting ? styles.overlayExtracting : undefined)}>
-                        {downloadState.extracting ? (
-                            <>
-                                <div className={styles.spinner} />
-                                <span className={styles.overlayTitle}>Installing…</span>
-                                <span className={styles.overlaySubtitle}>Extracting files</span>
-                            </>
-                        ) : (
-                            <>
-                                <span className={styles.overlayTitle}>Downloading…</span>
-                                <span className={styles.overlayPercent}>{downloadState.progress}%</span>
-                                <div className={styles.progressBar}>
-                                    <div className={styles.progressFill} style={{ width: `${downloadState.progress}%` }} />
-                                </div>
-                                {downloadState.downloaded && downloadState.total ? (
+                {downloadState && (() => {
+                    const isDepPhase = Boolean(downloadState.dependencyTitle);
+                    const live = isDepPhase ? dependencyDownloadState : undefined;
+                    const progress = live?.progress ?? downloadState.progress;
+                    const extracting = live?.extracting ?? downloadState.extracting;
+                    const downloaded = live?.downloaded ?? downloadState.downloaded;
+                    const total = live?.total ?? downloadState.total;
+                    return (
+                        <div className={classNames(styles.overlay, extracting ? styles.overlayExtracting : undefined)}>
+                            {extracting ? (
+                                <>
+                                    <div className={styles.spinner} />
+                                    <span className={styles.overlayTitle}>Installing…</span>
                                     <span className={styles.overlaySubtitle}>
-                                        {formatBytes(downloadState.downloaded)} / {formatBytes(downloadState.total)}
+                                        {isDepPhase
+                                            ? `Extracting ${downloadState.dependencyTitle}`
+                                            : 'Extracting files'}
                                     </span>
-                                ) : null}
-                            </>
-                        )}
-                    </div>
-                )}
+                                </>
+                            ) : (
+                                <>
+                                    <span className={styles.overlayTitle}>
+                                        {isDepPhase
+                                            ? (downloadState.dependencyTotal && downloadState.dependencyTotal > 1
+                                                ? `Installing required package (${downloadState.dependencyIndex}/${downloadState.dependencyTotal})…`
+                                                : 'Installing required package…')
+                                            : 'Downloading…'}
+                                    </span>
+                                    {isDepPhase && (
+                                        <span className={styles.overlaySubtitle}>{downloadState.dependencyTitle}</span>
+                                    )}
+                                    <span className={styles.overlayPercent}>{progress}%</span>
+                                    <div className={styles.progressBar}>
+                                        <div className={styles.progressFill} style={{ width: `${progress}%` }} />
+                                    </div>
+                                    {downloaded && total ? (
+                                        <span className={styles.overlaySubtitle}>
+                                            {formatBytes(downloaded)} / {formatBytes(total)}
+                                        </span>
+                                    ) : isDepPhase ? (
+                                        <span className={styles.overlaySubtitle}>Livery will install next</span>
+                                    ) : null}
+                                </>
+                            )}
+                        </div>
+                    );
+                })()}
 
                 {installedAny && <span className={styles.installedBadge}>INSTALLED</span>}
 
@@ -265,6 +293,23 @@ export const LiveryCard = ({
                         }
 
                         if (isDownloadingThisResolution) {
+                            const isInstallingDependency = Boolean(downloadState?.dependencyTitle);
+                            if (isInstallingDependency) {
+                                return (
+                                    <div key={res} className={styles.downloadChip}>
+                                        <button
+                                            type="button"
+                                            className={styles.downloadButton}
+                                            disabled
+                                            aria-disabled
+                                            style={{ marginTop: 0, width: '100%', justifyContent: 'center' }}
+                                        >
+                                            <span className={styles.btnLabelFull}>Installing required package…</span>
+                                            <span className={styles.btnLabelShort}>Installing…</span>
+                                        </button>
+                                    </div>
+                                );
+                            }
                             return (
                                 <div key={res} className={styles.downloadChip}>
                                     <button

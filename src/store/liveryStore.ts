@@ -476,12 +476,35 @@ export const useLiveryStore = create<LiveryState>((set, get) => {
                         return false;
                     }
 
-                    for (const ref of missing) {
+                    for (let i = 0; i < missing.length; i++) {
+                        const ref = missing[i];
+                        const dependencyTitle = ref.title ?? ref.slug;
+
+                        set((state) => ({
+                            downloadStates: {
+                                ...state.downloadStates,
+                                [livery.name]: {
+                                    progress: 0,
+                                    downloaded: 0,
+                                    total: 0,
+                                    extracting: false,
+                                    registration: livery.registration ?? undefined,
+                                    aircraft: livery.aircraftProfileName ?? livery.aircraft ?? undefined,
+                                    resolution,
+                                    simulator,
+                                    dependencySlug: ref.slug,
+                                    dependencyTitle,
+                                    dependencyIndex: i + 1,
+                                    dependencyTotal: missing.length
+                                }
+                            }
+                        }));
+
                         const success = await usePackageStore.getState().handleDownload(
                             {
                                 id: ref.slug,
                                 slug: ref.slug,
-                                title: ref.title ?? ref.slug,
+                                title: dependencyTitle,
                                 description: null,
                                 category: null,
                                 version: ref.version ?? null,
@@ -495,8 +518,14 @@ export const useLiveryStore = create<LiveryState>((set, get) => {
                             },
                             simulator
                         );
+
                         if (!success) {
-                            set({ error: `Failed to install required package "${ref.title ?? ref.slug}". Livery download aborted.` });
+                            set((state) => {
+                                const clone = { ...state.downloadStates };
+                                delete clone[livery.name];
+                                return { downloadStates: clone };
+                            });
+                            set({ error: `Failed to install required package "${dependencyTitle}". Livery download aborted.` });
                             return false;
                         }
                     }
