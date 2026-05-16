@@ -19,6 +19,7 @@ export const LoginPage = () => {
     const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const markAwaitingAuth = useAuthStore((state) => state.markAwaitingAuth);
     const setError = useAuthStore((state) => state.setError);
+    const pendingLiveryRedirect = useAuthStore((state) => state.pendingLiveryRedirect);
 
     const [lastAttempt, setLastAttempt] = useState<number | null>(null);
     const fromPath = (location.state as { from?: string })?.from ?? '/search';
@@ -26,10 +27,10 @@ export const LoginPage = () => {
     const {currentTheme} = useThemeStore();
 
     useEffect(() => {
-        if (isAuthenticated) {
+        if (isAuthenticated && !pendingLiveryRedirect) {
             navigate(fromPath, { replace: true });
         }
-    }, [fromPath, isAuthenticated, navigate]);
+    }, [fromPath, isAuthenticated, navigate, pendingLiveryRedirect]);
 
     const openPortal = useCallback(async () => {
         const api = window.electronAPI;

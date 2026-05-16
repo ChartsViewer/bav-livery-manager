@@ -13,6 +13,7 @@ export interface BrowserTokenPayload {
     rank?: string | null;
     totalTime?: string | null;
     totalFlights?: number | null;
+    liveryId?: string | null;
 }
 
 interface AuthState {
@@ -27,11 +28,13 @@ interface AuthState {
     status: 'idle' | 'awaiting-browser' | 'verifying' | 'error';
     error: string | null;
     isAuthenticated: boolean;
+    pendingLiveryRedirect: string | null;
     markAwaitingAuth: () => void;
     applyBrowserToken: (payload: BrowserTokenPayload) => void;
     verifySession: () => Promise<void>;
     setError: (message: string | null) => void;
     logout: () => void;
+    clearPendingLiveryRedirect: () => void;
 }
 
 const mapRole = (role?: string | null): AuthRole | null => {
@@ -55,6 +58,7 @@ export const useAuthStore = create<AuthState>()(
             status: 'idle',
             error: null,
             isAuthenticated: false,
+            pendingLiveryRedirect: null,
             markAwaitingAuth: () =>
                 set({
                     status: 'awaiting-browser',
@@ -67,7 +71,8 @@ export const useAuthStore = create<AuthState>()(
                     fullName: null,
                     rank: null,
                     totalTimeMins: null,
-                    totalFlights: null
+                    totalFlights: null,
+                    pendingLiveryRedirect: null
                 }),
             applyBrowserToken: (payload) => {
                 if (!payload?.token) {
@@ -92,9 +97,11 @@ export const useAuthStore = create<AuthState>()(
                     totalFlights: typeof payload.totalFlights === 'number' ? payload.totalFlights : null,
                     status: 'idle',
                     error: null,
-                    isAuthenticated: true
+                    isAuthenticated: true,
+                    pendingLiveryRedirect: payload.liveryId ?? null
                 });
             },
+            clearPendingLiveryRedirect: () => set({ pendingLiveryRedirect: null }),
             verifySession: async () => {
                 const { token, logout } = get();
                 if (!token) return;
@@ -161,7 +168,8 @@ export const useAuthStore = create<AuthState>()(
                     token: null,
                     status: 'idle',
                     error: null,
-                    isAuthenticated: false
+                    isAuthenticated: false,
+                    pendingLiveryRedirect: null
                 })
         }),
         {

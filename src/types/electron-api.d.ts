@@ -38,6 +38,7 @@ export interface AuthTokenPayload {
     rank?: string | null;
     totalTime?: string | null;
     totalFlights?: number | null;
+    liveryId?: string | null;
 }
 
 export interface AppUpdateStatus {

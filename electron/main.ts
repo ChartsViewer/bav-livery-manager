@@ -26,6 +26,7 @@ let pendingAuthPayload: {
     fullName?: string | null;
     rank?: string | null;
     totalTime?: string | null;
+    liveryId?: string | null;
 } | null = null;
 const isDev = process.env.NODE_ENV === 'development';
 app.setName(APP_TITLE);
@@ -305,7 +306,8 @@ function parseAuthPayload(rawUrl: string) {
             pilotId: parsed.searchParams.get('pilotId'),
             fullName: parsed.searchParams.get('fullName'),
             rank: parsed.searchParams.get('rank'),
-            totalTime: parsed.searchParams.get('totalTime')
+            totalTime: parsed.searchParams.get('totalTime'),
+            liveryId: parsed.searchParams.get('liveryId')
         };
     } catch {
         return null;
