@@ -17,7 +17,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    background: var(--panel);
+    background: var(--card);
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 14px 18px;
@@ -262,4 +262,29 @@
 .emptyState p {
     margin: 0;
     font-size: 0.95rem;
+    max-width: 420px;
+    line-height: 1.5;
+}
+
+.emptyTitle {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.01em;
+}
+
+.emptyStateAction {
+    padding: 8px 20px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.emptyStateAction:hover {
+    background: rgba(255, 255, 255, 0.1);
 }

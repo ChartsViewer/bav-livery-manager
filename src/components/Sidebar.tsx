@@ -57,7 +57,11 @@ export const Sidebar = () => {
     const {theme, currentTheme} = useThemeStore();
     const {data: flight} = useNextFlightQuery();
     const liveriesCount = useLiveryStore((state) => state.liveries.length);
-    const hasFlight = Boolean(flight) && liveriesCount > 0;
+    // Card shows when:
+    //   - no flight is booked (→ Book a flight CTA), OR
+    //   - a flight is booked AND liveries have loaded (→ full flight card).
+    // It stays hidden when a flight is booked but liveries haven't loaded yet.
+    const showFlightCard = !flight || liveriesCount > 0;
 
     const toggleSidebar = () => {
         if (isCollapsed) {
@@ -98,13 +102,13 @@ export const Sidebar = () => {
             </div>
 
                 <div className={styles.middleSection}>
-                    {isRenderExpanded && !isCollapsed && hasFlight && (
+                    {isRenderExpanded && !isCollapsed && showFlightCard && (
                         <NextFlightCard seamless />
                     )}
                     <DownloadProgress
                         isCollapsed={!isRenderExpanded}
                         isExpanding={!isCollapsed && !isRenderExpanded}
-                        layered={isRenderExpanded && !isCollapsed && hasFlight}
+                        layered={isRenderExpanded && !isCollapsed && showFlightCard}
                     />
                 </div>
                 <div className={classNames(styles.footer, isCollapsed && styles.panelFooterCollapsed)}>

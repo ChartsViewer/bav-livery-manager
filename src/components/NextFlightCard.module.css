@@ -213,3 +213,55 @@
     opacity: 0.6;
     flex-shrink: 0;
 }
+
+/* ─── Empty (no flight booked) state ─── */
+.cardEmpty {
+    gap: 8px;
+    padding: 10px 12px;
+}
+
+/* When the empty card is stacked under DownloadProgress (sidebar group),
+   restore the bottom cushion so the layered Downloads card doesn't cover
+   the "Book a flight" button. */
+.cardSeamless.cardEmpty {
+    padding-bottom: 22px;
+}
+
+.emptyEyebrow {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+}
+
+.emptySeparator {
+    opacity: 0.5;
+}
+
+.emptyStatus {
+    color: var(--text);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+}
+
+.emptyButton {
+    width: 100%;
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.emptyButton:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--text);
+}

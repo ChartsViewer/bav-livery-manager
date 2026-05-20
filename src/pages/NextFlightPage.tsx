@@ -21,6 +21,26 @@ const EmptyIcon = () => (
     </svg>
 );
 
+const NoFlightIcon = () => (
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+        <line x1="16" y1="2" x2="16" y2="6" />
+        <line x1="8" y1="2" x2="8" y2="6" />
+        <line x1="3" y1="10" x2="21" y2="10" />
+    </svg>
+);
+
+const BOOK_FLIGHT_URL = 'https://bavms.bavirtual.co.uk/ops/book-flight';
+
+const openExternal = (url: string) => {
+    const api = window.electronAPI;
+    if (api?.openPanelAuth) {
+        void api.openPanelAuth(url);
+        return;
+    }
+    window.open(url, '_blank', 'noopener');
+};
+
 const normalize = (value: string | null | undefined) => (value ?? '').trim().toLowerCase();
 
 const extractRegistration = (livery: Livery): string => {
@@ -127,8 +147,16 @@ export const NextFlightPage = () => {
                     <ReturnButton />
                 </div>
                 <div className={styles.emptyState}>
-                    <EmptyIcon />
-                    <p>No upcoming flight booked.</p>
+                    <NoFlightIcon />
+                    <h2 className={styles.emptyTitle}>No flight booked</h2>
+                    <p>Book a flight on the BAVirtual ops panel to see matching liveries here.</p>
+                    <button
+                        type="button"
+                        className={styles.emptyStateAction}
+                        onClick={() => openExternal(BOOK_FLIGHT_URL)}
+                    >
+                        Book a flight
+                    </button>
                 </div>
             </section>
         );
@@ -236,7 +264,12 @@ export const NextFlightPage = () => {
                     ) : (
                         <div className={styles.emptyState}>
                             <EmptyIcon />
-                            <p>No liveries available for {flight.registration} on {simulator}.</p>
+                            <h2 className={styles.emptyTitle}>No liveries available</h2>
+                            <p>
+                                Your booking for{' '}
+                                <span className={styles.registrationToken}>{flight.registration}</span>{' '}
+                                on {simulator} is recognised, but no liveries with this registration are in the catalog yet.
+                            </p>
                         </div>
                     )}
                 </div>

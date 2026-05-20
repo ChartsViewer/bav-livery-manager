@@ -9,6 +9,17 @@ const RoutePlaneIcon = () => (
     </svg>
 );
 
+const BOOK_FLIGHT_URL = 'https://bavms.bavirtual.co.uk/ops/book-flight';
+
+const openExternal = (url: string) => {
+    const api = window.electronAPI;
+    if (api?.openPanelAuth) {
+        void api.openPanelAuth(url);
+        return;
+    }
+    window.open(url, '_blank', 'noopener');
+};
+
 interface NextFlightCardProps {
     seamless?: boolean;
 }
@@ -17,9 +28,31 @@ export const NextFlightCard = ({ seamless }: NextFlightCardProps) => {
     const { data: flight } = useNextFlightQuery();
     const liveriesCount = useLiveryStore((state) => state.liveries.length);
 
-    if (!flight || liveriesCount === 0) return null;
-
     const cardClass = `${styles.card} ${seamless ? styles.cardSeamless : ''}`.trim();
+
+    // No flight booked → show a compact CTA to book one.
+    if (!flight) {
+        const emptyClass = `${cardClass} ${styles.cardEmpty}`;
+        return (
+            <div className={emptyClass}>
+                <span className={styles.emptyEyebrow}>
+                    Next Flight
+                    <span className={styles.emptySeparator} aria-hidden>·</span>
+                    <span className={styles.emptyStatus}>None booked</span>
+                </span>
+                <button
+                    type="button"
+                    className={styles.emptyButton}
+                    onClick={() => openExternal(BOOK_FLIGHT_URL)}
+                >
+                    Book a flight
+                </button>
+            </div>
+        );
+    }
+
+    // Flight booked but no liveries loaded → hide the card entirely.
+    if (liveriesCount === 0) return null;
 
     return (
         <Link to="/next-flight" className={cardClass}>
