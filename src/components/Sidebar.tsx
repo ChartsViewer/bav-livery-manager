@@ -91,7 +91,7 @@ export const Sidebar = () => {
                         >
                             <Icon name={item.icon}/>
                             {!isCollapsed && <span>{item.label}</span>}
-                            {item.to === '/downloads' && <UpdateBadge/>}
+                            {item.to === '/downloads' && <UpdateBadge compact={isCollapsed}/>}
                         </NavLink>
                     ))}
                 </nav>

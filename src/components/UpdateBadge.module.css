@@ -7,11 +7,23 @@
     padding: 0 6px;
     border-radius: 10px;
     background: #e4e139;
-    color: white;
     font-size: 0.7rem;
     font-weight: 700;
     line-height: 1;
     color: #000000;
     margin-bottom: 1px;
     margin-left: auto;
+}
+
+.badgeCompact {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    margin: 0;
+    font-size: 0.6rem;
+    border-radius: 8px;
+    pointer-events: none;
 }
