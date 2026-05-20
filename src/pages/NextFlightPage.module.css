@@ -1,0 +1,265 @@
+.page {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    height: 100%;
+    min-height: 0;
+}
+
+.headerButtons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.heroCard {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    color: var(--text);
+}
+
+.heroTopRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.eyebrow svg {
+    width: 14px;
+    height: 14px;
+    stroke: #4a9eff;
+    color: #4a9eff;
+}
+
+.flightBadge {
+    font-family: "JetBrains Mono", monospace;
+    margin-left: auto;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--muted);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 6px;
+    padding: 2px 6px;
+    letter-spacing: 0.03em;
+}
+
+.heroRoute {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.airport {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    flex-shrink: 0;
+}
+
+.airportRight {
+    text-align: right;
+}
+
+.airportCode {
+    font-size: 1.85rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text);
+    letter-spacing: 0.06em;
+}
+
+.airportLabel {
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.routeMiddle {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 40px;
+}
+
+.routeDash {
+    flex: 1;
+    height: 0;
+    border-top: 1px dashed rgba(74, 158, 255, 0.45);
+}
+
+.routePlane {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(74, 158, 255, 0.85);
+    flex-shrink: 0;
+}
+
+.routePlane svg {
+    width: 14px;
+    height: 14px;
+    transform: rotate(90deg);
+    fill: currentColor;
+}
+
+/* ─── Meta facts strip ─── */
+.factsSheet {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin: 0;
+}
+
+.factCell {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.metaLabel {
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+    margin: 0;
+}
+
+.metaValue {
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+}
+
+.metaValueMono {
+    font-family: "JetBrains Mono", monospace;
+    letter-spacing: 0.04em;
+}
+
+.liveriesSection {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+    min-height: 0;
+}
+
+.resultCount {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.resultCount strong {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.registrationToken {
+    font-family: "JetBrains Mono", monospace;
+    color: var(--text);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+
+.simSwitch {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-left: auto;
+}
+
+.simChip {
+    border: 1px solid var(--chips-background);
+    border-radius: 8px;
+    padding: 6px 16px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text);
+    background: var(--chips-background);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.simChip:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.simChip:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.simChipActive {
+    border-color: var(--text);
+    background: var(--chips-background-active);
+}
+
+.scrollContainer {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    padding-right: 2px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-auto-rows: min-content;
+    gap: 20px;
+}
+
+.emptyState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 4rem 2rem;
+    color: var(--muted);
+    text-align: center;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card);
+}
+
+.emptyState svg {
+    opacity: 0.3;
+}
+
+.emptyState p {
+    margin: 0;
+    font-size: 0.95rem;
+}
