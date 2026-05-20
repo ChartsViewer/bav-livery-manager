@@ -9,6 +9,7 @@ import {useState} from "react";
 import {useThemeStore} from "@/store/themeStore";
 import {useNextFlightQuery} from "@/hooks/useNextFlightQuery";
 import {useLiveryStore} from "@/store/liveryStore";
+import {usePackagesQuery} from "@/hooks/usePackagesQuery";
 
 const NAV_ITEMS = [
     {label: 'Liveries', to: '/search', icon: 'search'},
@@ -57,6 +58,13 @@ export const Sidebar = () => {
     const {theme, currentTheme} = useThemeStore();
     const {data: flight} = useNextFlightQuery();
     const liveriesCount = useLiveryStore((state) => state.liveries.length);
+    const {data: packages} = usePackagesQuery();
+    const packagesCount = packages?.length ?? 0;
+
+    const navCounts: Record<string, number> = {
+        '/search': liveriesCount,
+        '/packages': packagesCount
+    };
     // Card shows when:
     //   - no flight is booked (→ Book a flight CTA), OR
     //   - a flight is booked AND liveries have loaded (→ full flight card).
@@ -85,19 +93,25 @@ export const Sidebar = () => {
                     </div>
                 </div>
                 <nav className={styles.panelButtons}>
-                    {NAV_ITEMS.map((item) => (
-                        <NavLink
-                            key={item.to}
-                            to={item.to}
-                            className={({isActive}) =>
-                                classNames(styles.panelButton, isActive && styles.panelButtonActive)
-                            }
-                        >
-                            <Icon name={item.icon}/>
-                            {!isCollapsed && <span>{item.label}</span>}
-                            {item.to === '/downloads' && <UpdateBadge compact={isCollapsed}/>}
-                        </NavLink>
-                    ))}
+                    {NAV_ITEMS.map((item) => {
+                        const count = navCounts[item.to];
+                        return (
+                            <NavLink
+                                key={item.to}
+                                to={item.to}
+                                className={({isActive}) =>
+                                    classNames(styles.panelButton, isActive && styles.panelButtonActive)
+                                }
+                            >
+                                <Icon name={item.icon}/>
+                                {!isCollapsed && <span>{item.label}</span>}
+                                {!isCollapsed && count > 0 && (
+                                    <span className={styles.count}>{count}</span>
+                                )}
+                                {item.to === '/downloads' && <UpdateBadge compact={isCollapsed}/>}
+                            </NavLink>
+                        );
+                    })}
                 </nav>
             </div>
 

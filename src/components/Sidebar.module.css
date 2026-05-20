@@ -71,6 +71,22 @@
     stroke: var(--text);
 }
 
+.count {
+    margin-left: auto;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    opacity: 0.65;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+}
+
+.panelButton:hover .count,
+.panelButtonActive .count {
+    opacity: 0.9;
+    color: var(--text);
+}
+
 .middleSection {
     flex: 1;
     display: flex;
