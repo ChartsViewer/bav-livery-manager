@@ -15,6 +15,7 @@ import { useLiveriesQuery } from '@/hooks/useLiveriesQuery';
 import { useInstalledLiveriesQuery } from '@/hooks/useInstalledLiveriesQuery';
 import { usePackagesQuery } from '@/hooks/usePackagesQuery';
 import { InformationPage } from './pages/InformationPage';
+import { NextFlightPage } from './pages/NextFlightPage';
 import {ThemeSync} from "@/components/ThemeSync";
 
 export const App = () => {
@@ -40,6 +41,7 @@ export const App = () => {
             <Route path="downloads" element={<DownloadsPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="information/:liveryId" element={<InformationPage/>}></Route>
+            <Route path="next-flight" element={<NextFlightPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/search" replace />} />

@@ -1,11 +1,14 @@
 import {NavLink} from 'react-router-dom';
 import {DownloadProgress} from './DownloadProgress';
+import {NextFlightCard} from './NextFlightCard';
 import {UpdateBadge} from './UpdateBadge';
 import {APP_VERSION} from '@/constants/appVersion';
 import styles from './Sidebar.module.css';
 import {Package as PackageIcon, RotateCw} from 'react-feather';
 import {useState} from "react";
 import {useThemeStore} from "@/store/themeStore";
+import {useNextFlightQuery} from "@/hooks/useNextFlightQuery";
+import {useLiveryStore} from "@/store/liveryStore";
 
 const NAV_ITEMS = [
     {label: 'Liveries', to: '/search', icon: 'search'},
@@ -52,6 +55,9 @@ export const Sidebar = () => {
     const [isRenderExpanded, setIsRenderExpanded] = useState(true);
 
     const {theme, currentTheme} = useThemeStore();
+    const {data: flight} = useNextFlightQuery();
+    const liveriesCount = useLiveryStore((state) => state.liveries.length);
+    const hasFlight = Boolean(flight) && liveriesCount > 0;
 
     const toggleSidebar = () => {
         if (isCollapsed) {
@@ -92,9 +98,13 @@ export const Sidebar = () => {
             </div>
 
                 <div className={styles.middleSection}>
-                    <DownloadProgress 
-                        isCollapsed={!isRenderExpanded} 
+                    {isRenderExpanded && !isCollapsed && hasFlight && (
+                        <NextFlightCard seamless />
+                    )}
+                    <DownloadProgress
+                        isCollapsed={!isRenderExpanded}
                         isExpanding={!isCollapsed && !isRenderExpanded}
+                        layered={isRenderExpanded && !isCollapsed && hasFlight}
                     />
                 </div>
                 <div className={classNames(styles.footer, isCollapsed && styles.panelFooterCollapsed)}>

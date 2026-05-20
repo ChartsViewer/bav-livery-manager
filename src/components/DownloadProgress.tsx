@@ -9,6 +9,7 @@ import {formatBytes} from "@/utils/formatBytes";
 interface DownloadProgressProps {
     isCollapsed: boolean;
     isExpanding?: boolean;
+    layered?: boolean;
 }
 
 const DownloadIcon = () => (
@@ -21,17 +22,19 @@ const DownloadIcon = () => (
 
 interface DownloadsInformation {
     entries: [string, DownloadProgressType][]
+    layered?: boolean
 }
 
 const MAX_VISIBLE_ENTRIES = 2;
 
-const DownloadsInformation = ({entries}: DownloadsInformation) => {
+const DownloadsInformation = ({entries, layered}: DownloadsInformation) => {
     const visibleEntries = entries.slice(0, MAX_VISIBLE_ENTRIES);
     const overflowCount = Math.max(0, entries.length - MAX_VISIBLE_ENTRIES);
+    const containerClass = `${styles.container} ${layered ? styles.containerLayered : ''}`.trim();
 
     if (entries.length === 0) {
         return (
-            <div className={styles.container}>
+            <div className={containerClass}>
                 <div className={styles.emptyState}>
                     <div className={styles.emptyIcon}>
                         <DownloadIcon />
@@ -44,7 +47,7 @@ const DownloadsInformation = ({entries}: DownloadsInformation) => {
     }
 
     return (
-        <div className={styles.container}>
+        <div className={containerClass}>
             <div className={styles.header}>
                 <DownloadIcon />
                 <span>Downloading</span>
@@ -124,7 +127,7 @@ const DownloadsInformation = ({entries}: DownloadsInformation) => {
     )
 }
 
-export const DownloadProgress = ({isCollapsed, isExpanding}: DownloadProgressProps) => {
+export const DownloadProgress = ({isCollapsed, isExpanding, layered}: DownloadProgressProps) => {
     const liveryStates = useLiveryStore((state) => state.downloadStates);
     const packageStates = usePackageStore((state) => state.downloadStates);
     const entries = useMemo<[string, DownloadProgressType][]>(() => {
@@ -169,7 +172,7 @@ export const DownloadProgress = ({isCollapsed, isExpanding}: DownloadProgressPro
 
     if (entries.length === 0) {
         return (
-            <div className={styles.container}>
+            <div className={`${styles.container} ${layered ? styles.containerLayered : ''}`.trim()}>
                 <div className={styles.emptyState}>
                     <div className={styles.emptyIcon}>
                         <DownloadIcon />
@@ -182,6 +185,6 @@ export const DownloadProgress = ({isCollapsed, isExpanding}: DownloadProgressPro
     }
 
     return (
-        <DownloadsInformation entries={entries} />
+        <DownloadsInformation entries={entries} layered={layered} />
     );
 };

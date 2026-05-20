@@ -6,6 +6,18 @@
     animation: fadeIn 0.4s ease-out;
 }
 
+.containerLayered {
+    margin-top: -14px;
+    border-radius: 12px;
+    border-color: var(--border);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.04) inset,
+        0 6px 14px -6px rgba(0, 0, 0, 0.45),
+        0 2px 4px rgba(0, 0, 0, 0.2);
+    position: relative;
+    z-index: 1;
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;

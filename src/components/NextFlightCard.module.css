@@ -1,0 +1,215 @@
+.card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    padding: 12px 14px;
+    background: linear-gradient(
+        180deg,
+        rgba(74, 158, 255, 0.12) 0%,
+        rgba(74, 158, 255, 0.02) 100%
+    );
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    text-decoration: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
+    animation: fadeIn 0.35s ease-out;
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(80% 60% at 100% 0%, rgba(74, 158, 255, 0.20), transparent 60%);
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.card:hover {
+    border-color: rgba(74, 158, 255, 0.55);
+    transform: translateY(-1px);
+}
+
+.card:hover::before {
+    opacity: 1;
+}
+
+.cardSeamless {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    padding-bottom: 20px;
+}
+
+.cardSeamless:hover {
+    transform: none;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(2px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+}
+
+.header svg {
+    width: 12px;
+    height: 12px;
+    stroke: #4a9eff;
+    color: #4a9eff;
+}
+
+.headerLabel {
+    color: var(--muted);
+}
+
+.flightCode {
+    margin-left: auto;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--muted);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 6px;
+    padding: 2px 6px;
+    letter-spacing: 0.03em;
+}
+
+.route {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 2px;
+}
+
+.airport {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    flex-shrink: 0;
+}
+
+.airportCode {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--text);
+    line-height: 1;
+}
+
+.airportLabel {
+    font-size: 0.58rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    opacity: 0.85;
+}
+
+.airportRight {
+    text-align: right;
+}
+
+.routeMiddle {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-width: 24px;
+    padding-top: 2px;
+}
+
+.routeDash {
+    flex: 1;
+    height: 0;
+    border-top: 1px dashed rgba(74, 158, 255, 0.45);
+}
+
+.routePlane {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(74, 158, 255, 0.85);
+    flex-shrink: 0;
+}
+
+.routePlane svg {
+    width: 11px;
+    height: 11px;
+    transform: rotate(90deg);
+    fill: currentColor;
+}
+
+.flightLine {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: 8px;
+    margin-top: 2px;
+    border-top: 1px solid rgba(74, 158, 255, 0.12);
+    font-size: 0.7rem;
+    color: var(--muted);
+}
+
+.callsign {
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.72rem;
+}
+
+.aircraftLine {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.aircraft {
+    color: var(--muted);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+.registration {
+    color: var(--text);
+    font-weight: 600;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.7rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    letter-spacing: 0.04em;
+}
+
+.dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--muted);
+    opacity: 0.6;
+    flex-shrink: 0;
+}
