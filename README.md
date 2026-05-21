@@ -28,7 +28,7 @@ A desktop utility that helps **BAVirtual (British Airways Virtual)** pilots inst
 
 ## 📦 Installation
 
-> Currently distributed for **Windows (x64)** only.
+> Distributed only for **Windows (x64)** as the Manager supports only MSFS2020 and MSFS2024.
 
 1. Go to the **[Releases](https://github.com/p-sergienko/bav-livery-manager/releases)** page.
 2. Download the latest `BAV-Livery-Manager-x.y.z-Setup.exe`.
