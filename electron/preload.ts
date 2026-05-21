@@ -27,7 +27,9 @@ const INVOKE_CHANNELS = [
     'check-for-app-update',
     'download-app-update',
     'install-app-update',
-    'get-app-version'
+    'get-app-version',
+    'get-disk-usage',
+    'open-path'
 ] as const;
 
 const ON_CHANNELS = ['download-progress', 'package-progress', 'auth-token', 'app-update-status'] as const;
@@ -200,6 +202,14 @@ const api: ElectronAPI = {
     },
     removeAppUpdateListeners: () => {
         ipcRenderer.removeAllListeners('app-update-status');
+    },
+    getDiskUsage: () => {
+        ensureInvokeChannel('get-disk-usage');
+        return ipcRenderer.invoke('get-disk-usage');
+    },
+    openPath: (targetPath: string) => {
+        ensureInvokeChannel('open-path');
+        return ipcRenderer.invoke('open-path', targetPath);
     }
 };
 

@@ -76,6 +76,37 @@ export interface InstalledLiveryRecord {
     version?: string;
 }
 
+export interface DiskUsageEntry {
+    type: 'livery' | 'package';
+    liveryId?: string;
+    slug?: string;
+    name: string;
+    folderName: string;
+    installPath: string;
+    simulator: string;
+    resolution?: string;
+    sizeBytes: number;
+    missing?: boolean;
+}
+
+export interface DriveStats {
+    mountPath: string;
+    label: string;
+    totalBytes: number;
+    freeBytes: number;
+    usedBytes: number;
+    bavBytes: number;
+    associatedSimulators: string[];
+}
+
+export interface DiskUsageReport {
+    entries: DiskUsageEntry[];
+    totalBytes: number;
+    bySimulator: Record<string, number>;
+    drives: DriveStats[];
+    scannedAt: number;
+}
+
 export interface ElectronAPI {
     fetchLiveries: (authToken?: string | null) => Promise<{ version?: string; liveries: Livery[] }>;
     downloadLivery: (
@@ -126,6 +157,8 @@ export interface ElectronAPI {
     getAppVersion: () => Promise<string>;
     onAppUpdateStatus: (callback: ((status: AppUpdateStatus) => void) | null) => void;
     removeAppUpdateListeners: () => void;
+    getDiskUsage: () => Promise<DiskUsageReport>;
+    openPath: (targetPath: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 declare global {

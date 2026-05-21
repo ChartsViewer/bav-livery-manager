@@ -1,6 +1,6 @@
 import path from 'node:path';
 import fs from 'fs-extra';
-import { dialog, ipcMain } from 'electron';
+import { dialog, ipcMain, shell } from 'electron';
 import type { OpenDialogOptions } from 'electron';
 import type { AppContext, DownloadResult, Settings } from '../types';
 import { detectSimulatorPaths } from '../services/simulatorPaths';
@@ -20,6 +20,127 @@ import {
 } from '../services/installedPackagesStore';
 import { fetchWithTimeout } from '../utils/network';
 import * as versionManager from '../versionManager';
+
+interface DiskUsageEntry {
+    type: 'livery' | 'package';
+    liveryId?: string;
+    slug?: string;
+    name: string;
+    folderName: string;
+    installPath: string;
+    simulator: string;
+    resolution?: string;
+    sizeBytes: number;
+    missing?: boolean;
+}
+
+interface DriveStats {
+    mountPath: string;
+    label: string;
+    totalBytes: number;
+    freeBytes: number;
+    usedBytes: number;
+    bavBytes: number;
+    associatedSimulators: string[];
+}
+
+interface DiskUsageReport {
+    entries: DiskUsageEntry[];
+    totalBytes: number;
+    bySimulator: Record<string, number>;
+    drives: DriveStats[];
+    scannedAt: number;
+}
+
+function normalizeDriveKey(rawRoot: string): string {
+    return rawRoot.replace(/[\\/]+$/, '').toLowerCase();
+}
+
+function driveLabelFor(rawRoot: string): string {
+    const trimmed = rawRoot.replace(/[\\/]+$/, '');
+    if (/^[a-zA-Z]:$/.test(trimmed)) {
+        return `${trimmed.toUpperCase()}\\`;
+    }
+    return trimmed || rawRoot;
+}
+
+async function collectDriveStats(settings: Settings, entries: DiskUsageEntry[]): Promise<DriveStats[]> {
+    const candidates: Array<{ simLabel: string; simPath: string }> = [];
+    if (settings.msfs2020Path) candidates.push({ simLabel: 'MSFS 2020', simPath: settings.msfs2020Path });
+    if (settings.msfs2024Path) candidates.push({ simLabel: 'MSFS 2024', simPath: settings.msfs2024Path });
+
+    const driveMap = new Map<string, DriveStats>();
+
+    for (const { simLabel, simPath } of candidates) {
+        try {
+            if (!(await fs.pathExists(simPath))) continue;
+            const parsed = path.parse(simPath);
+            const key = normalizeDriveKey(parsed.root);
+            if (driveMap.has(key)) {
+                const drive = driveMap.get(key)!;
+                if (!drive.associatedSimulators.includes(simLabel)) {
+                    drive.associatedSimulators.push(simLabel);
+                }
+                continue;
+            }
+            const stats = await fs.promises.statfs(simPath);
+            const totalBytes = Number(stats.blocks) * Number(stats.bsize);
+            const freeBytes = Number(stats.bavail) * Number(stats.bsize);
+            driveMap.set(key, {
+                mountPath: parsed.root || simPath,
+                label: driveLabelFor(parsed.root || simPath),
+                totalBytes,
+                freeBytes,
+                usedBytes: Math.max(totalBytes - freeBytes, 0),
+                bavBytes: 0,
+                associatedSimulators: [simLabel]
+            });
+        } catch (error) {
+            console.warn('Failed to read drive stats for', simPath, error);
+        }
+    }
+
+    entries.forEach((entry) => {
+        if (entry.missing || !entry.installPath) return;
+        try {
+            const key = normalizeDriveKey(path.parse(entry.installPath).root);
+            const drive = driveMap.get(key);
+            if (drive) drive.bavBytes += entry.sizeBytes;
+        } catch {
+            // ignore
+        }
+    });
+
+    return Array.from(driveMap.values()).sort((a, b) => b.totalBytes - a.totalBytes);
+}
+
+async function calculateFolderSize(folderPath: string): Promise<number> {
+    let total = 0;
+    let entries;
+    try {
+        entries = await fs.readdir(folderPath, { withFileTypes: true });
+    } catch {
+        return 0;
+    }
+
+    await Promise.all(
+        entries.map(async (entry) => {
+            const entryPath = path.join(folderPath, entry.name);
+            try {
+                if (entry.isDirectory()) {
+                    total += await calculateFolderSize(entryPath);
+                } else if (entry.isFile()) {
+                    const stat = await fs.stat(entryPath);
+                    total += stat.size;
+                }
+            } catch {
+                // Inaccessible file/folder — skip it
+            }
+        })
+    );
+
+    return total;
+}
 
 let handlersRegistered = false;
 
@@ -257,8 +378,95 @@ export function registerIpcHandlers(appContext: AppContext) {
     ipcMain.handle('set-window-title', (_event, title: string) => {
         const targetWindow = appContext.getMainWindow();
         if (!targetWindow || targetWindow.isDestroyed()) return;
-        
+
         targetWindow.setTitle(title);
+    });
+
+    ipcMain.handle('get-disk-usage', async (): Promise<DiskUsageReport> => {
+        try {
+            await validateInstallations();
+            await validatePackageInstallations();
+
+            const [liveries, packages] = await Promise.all([
+                getInstalledLiveries(),
+                getInstalledPackages()
+            ]);
+
+            const liveryEntries: DiskUsageEntry[] = await Promise.all(
+                liveries.map(async (record) => {
+                    const exists = await fs.pathExists(record.installPath);
+                    const sizeBytes = exists ? await calculateFolderSize(record.installPath) : 0;
+                    return {
+                        type: 'livery' as const,
+                        liveryId: record.liveryId,
+                        name: record.originalName,
+                        folderName: record.folderName,
+                        installPath: record.installPath,
+                        simulator: record.simulator,
+                        resolution: record.resolution,
+                        sizeBytes,
+                        missing: !exists
+                    };
+                })
+            );
+
+            const packageEntries: DiskUsageEntry[] = await Promise.all(
+                packages.map(async (record) => {
+                    const exists = await fs.pathExists(record.installPath);
+                    const sizeBytes = exists ? await calculateFolderSize(record.installPath) : 0;
+                    return {
+                        type: 'package' as const,
+                        slug: record.slug,
+                        name: record.title,
+                        folderName: record.folderName,
+                        installPath: record.installPath,
+                        simulator: record.simulator,
+                        sizeBytes,
+                        missing: !exists
+                    };
+                })
+            );
+
+            const entries = [...liveryEntries, ...packageEntries];
+            const totalBytes = entries.reduce((sum, entry) => sum + entry.sizeBytes, 0);
+            const bySimulator: Record<string, number> = {};
+            entries.forEach((entry) => {
+                bySimulator[entry.simulator] = (bySimulator[entry.simulator] ?? 0) + entry.sizeBytes;
+            });
+
+            const settings = loadSettings();
+            const drives = await collectDriveStats(settings, entries);
+
+            return {
+                entries,
+                totalBytes,
+                bySimulator,
+                drives,
+                scannedAt: Date.now()
+            };
+        } catch (error) {
+            console.error('Failed to calculate disk usage:', error);
+            return { entries: [], totalBytes: 0, bySimulator: {}, drives: [], scannedAt: Date.now() };
+        }
+    });
+
+    ipcMain.handle('open-path', async (_event, targetPath: string): Promise<{ success: boolean; error?: string }> => {
+        if (!targetPath) {
+            return { success: false, error: 'No path provided.' };
+        }
+        try {
+            if (!(await fs.pathExists(targetPath))) {
+                return { success: false, error: 'The folder no longer exists at that path.' };
+            }
+            const result = await shell.openPath(targetPath);
+            if (result) {
+                return { success: false, error: result };
+            }
+            return { success: true };
+        } catch (error) {
+            console.error('Failed to open path:', error);
+            return { success: false, error: (error as Error).message };
+        }
     });
 
     handlersRegistered = true;

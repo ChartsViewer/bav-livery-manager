@@ -1,0 +1,371 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.staticContent {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.scrollableSection {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.scrollableList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.drivesBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.driveCard {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--chips-background);
+}
+
+.driveHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.driveLabel {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.driveSims {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-left: 6px;
+    font-family: inherit;
+}
+
+.driveSummary {
+    font-size: 0.72rem;
+    color: var(--muted);
+}
+
+.driveSummaryStrong {
+    color: var(--text);
+    font-weight: 600;
+}
+
+.stackedBar {
+    display: flex;
+    height: 10px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: var(--chips-background-active);
+}
+
+.stackedSegment {
+    height: 100%;
+    transition: width 0.4s ease;
+}
+
+.segmentOther {
+    background: linear-gradient(90deg, #555 0%, #777 100%);
+}
+
+.segmentBav {
+    background: linear-gradient(90deg, #dc3545 0%, #ff6b7a 100%);
+}
+
+.segmentFree {
+    background: linear-gradient(90deg, #2a8a3f 0%, #4caf50 100%);
+}
+
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: 0.7rem;
+    color: var(--muted);
+}
+
+.legendItem {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.legendSwatch {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.legendSwatchOther {
+    background: #6a6a6a;
+}
+
+.legendSwatchBav {
+    background: #dc3545;
+}
+
+.legendSwatchFree {
+    background: #4caf50;
+}
+
+.legendValue {
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.summaryText {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.totalRow {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.totalValue {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: -0.02em;
+}
+
+.totalLabel {
+    font-size: 0.78rem;
+    color: var(--muted);
+}
+
+.scanInfo {
+    margin: 0;
+    font-size: 0.72rem;
+    color: var(--muted);
+}
+
+.refreshButton {
+    padding: 7px 12px;
+    background: var(--buttons);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.78rem;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.refreshButton:hover:not(:disabled) {
+    background: var(--chips-background-active);
+    border-color: var(--text);
+}
+
+.refreshButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.refreshIcon {
+    transition: transform 0.6s linear;
+}
+
+.refreshButtonSpin .refreshIcon {
+    animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.simulatorBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.simRow {
+    display: grid;
+    grid-template-columns: 90px 1fr 110px;
+    align-items: center;
+    gap: 12px;
+}
+
+.simLabel {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.simSize {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    text-align: right;
+}
+
+.bar {
+    position: relative;
+    height: 8px;
+    background: var(--chips-background);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.barFill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: linear-gradient(90deg, var(--text) 0%, var(--muted) 100%);
+    border-radius: 999px;
+    transition: width 0.35s ease;
+}
+
+.barFillFs24 {
+    background: linear-gradient(90deg, #ff6b7a 0%, #dc3545 100%);
+}
+
+.tabs {
+    display: flex;
+    gap: 6px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0;
+}
+
+.tab {
+    padding: 7px 12px;
+    background: transparent;
+    color: var(--muted);
+    border: 0;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-size: 0.78rem;
+    transition: all 0.2s ease;
+    margin-bottom: -1px;
+}
+
+.tab:hover {
+    color: var(--text);
+}
+
+.tabActive {
+    color: var(--text);
+    border-bottom-color: var(--text);
+}
+
+.list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.listItem {
+    display: grid;
+    grid-template-columns: 1fr 110px;
+    grid-template-rows: auto auto;
+    gap: 4px 12px;
+    align-items: center;
+}
+
+.listItemHeader {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+}
+
+.listItemName {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.listItemMeta {
+    font-size: 0.7rem;
+    color: var(--muted);
+    flex-shrink: 0;
+}
+
+.listItemSize {
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    text-align: right;
+}
+
+.listItemBar {
+    grid-column: 1 / -1;
+}
+
+.emptyState {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 20px;
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.skeletonRow {
+    height: 32px;
+    background: var(--chips-background);
+    border-radius: 6px;
+    animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.55; }
+    50% { opacity: 0.85; }
+}
+
+.error {
+    padding: 10px 12px;
+    border: 1px solid var(--danger);
+    border-radius: 6px;
+    background: rgba(255, 68, 68, 0.08);
+    color: var(--danger);
+    font-size: 0.8rem;
+}

@@ -5,9 +5,10 @@ import { useAuthStore } from '@/store/authStore';
 import { Toast } from '@/components/Toast';
 import { AppUpdater } from '@/components/AppUpdater';
 import { Changelog } from '@/components/Changelog';
+import { DiskUsage } from '@/components/DiskUsage';
 import styles from './SettingsPage.module.css';
 import { BAVIcon } from "@/components/Icons/BAVIcon";
-import { Book, Folder, LogOut, Save, User, Zap, Sun, Moon, ChevronDown, ChevronUp } from 'react-feather';
+import { Book, Folder, FolderPlus, LogOut, Save, User, Zap, Sun, Moon, ChevronDown, ChevronUp, HardDrive } from 'react-feather';
 import { useTour } from '@/tour/useTour';
 import { MAIN_TOUR_STEPS } from "@/tour/steps";
 import {useThemeStore} from "@/store/themeStore";
@@ -28,20 +29,33 @@ export const SettingsPage = () => {
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
     const [detecting, setDetecting] = useState(false);
 
-    const [isPathsOpen, setIsPathsOpen] = useState(true);
-    const [isAppearanceOpen, setIsAppearanceOpen] = useState(true);
-    const [isUpdatesOpen, setIsUpdatesOpen] = useState(false);
+    type ExclusiveSection = 'paths' | 'appearance' | 'diskUsage' | 'updates';
+    const [exclusiveSection, setExclusiveSection] = useState<ExclusiveSection | null>('paths');
 
-    const handleTogglePaths = () => {
-        const nextState = !isPathsOpen;
-        setIsPathsOpen(nextState);
-        if (nextState) setIsUpdatesOpen(false);
+    const isPathsOpen = exclusiveSection === 'paths';
+    const isAppearanceOpen = exclusiveSection === 'appearance';
+    const isDiskUsageOpen = exclusiveSection === 'diskUsage';
+    const isUpdatesOpen = exclusiveSection === 'updates';
+
+    const toggleExclusiveSection = (section: ExclusiveSection) => {
+        setExclusiveSection((current) => (current === section ? null : section));
     };
 
-    const handleToggleUpdates = () => {
-        const nextState = !isUpdatesOpen;
-        setIsUpdatesOpen(nextState);
-        if (nextState) setIsPathsOpen(false);
+    const handleOpenCommunityFolder = async (field: 'msfs2020Path' | 'msfs2024Path') => {
+        const targetPath = formState[field];
+        if (!targetPath) {
+            showToast('No folder configured for this simulator yet.', 'error');
+            return;
+        }
+        const api = window.electronAPI;
+        if (!api?.openPath) {
+            showToast('Opening folders is only available in the desktop app.', 'error');
+            return;
+        }
+        const result = await api.openPath(targetPath);
+        if (!result.success) {
+            showToast(result.error ?? 'Unable to open that folder.', 'error');
+        }
     };
 
     useEffect(() => {
@@ -179,7 +193,7 @@ export const SettingsPage = () => {
 
             <div className={styles.scrollableContent}>
                 <div className={styles.sectionCard}>
-                    <div className={styles.sectionHeader} onClick={handleTogglePaths}>
+                    <div className={styles.sectionHeader} onClick={() => toggleExclusiveSection('paths')}>
                         <div className={styles.sectionTitleWrap}>
                             <h2 className={styles.formTitle}>Simulator Paths</h2>
                         </div>
@@ -199,6 +213,16 @@ export const SettingsPage = () => {
                                                 <Folder size={20}/>
                                                 <p>Browse</p>
                                             </button>
+                                            <button
+                                                type="button"
+                                                className={styles.actionButton}
+                                                onClick={() => handleOpenCommunityFolder('msfs2020Path')}
+                                                disabled={!formState.msfs2020Path}
+                                                title="Open this folder in your file explorer"
+                                            >
+                                                <FolderPlus size={20}/>
+                                                <p>Open</p>
+                                            </button>
                                         </div>
                                     </label>
 
@@ -209,6 +233,16 @@ export const SettingsPage = () => {
                                             <button type="button" className={styles.actionButton} onClick={() => handleBrowse('msfs2024Path')}>
                                                 <Folder size={20}/>
                                                 <p>Browse</p>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className={styles.actionButton}
+                                                onClick={() => handleOpenCommunityFolder('msfs2024Path')}
+                                                disabled={!formState.msfs2024Path}
+                                                title="Open this folder in your file explorer"
+                                            >
+                                                <FolderPlus size={20}/>
+                                                <p>Open</p>
                                             </button>
                                         </div>
                                     </label>
@@ -231,7 +265,7 @@ export const SettingsPage = () => {
                 </div>
 
                 <div className={styles.sectionCard}>
-                    <div className={styles.sectionHeader} onClick={() => setIsAppearanceOpen(!isAppearanceOpen)}>
+                    <div className={styles.sectionHeader} onClick={() => toggleExclusiveSection('appearance')}>
                         <div className={styles.sectionTitleWrap}>
                             <h2 className={styles.formTitle}>Appearance</h2>
                         </div>
@@ -270,8 +304,29 @@ export const SettingsPage = () => {
                     </div>
                 </div>
 
+                <div className={styles.sectionCard}>
+                    <div className={styles.sectionHeader} onClick={() => toggleExclusiveSection('diskUsage')}>
+                        <div className={styles.sectionTitleWrap}>
+                            <h2 className={styles.formTitle}>
+                                <HardDrive size={14} style={{ verticalAlign: '-2px', marginRight: 6 }} />
+                                Disk Usage
+                            </h2>
+                        </div>
+                        <div className={styles.chevron}>
+                            {isDiskUsageOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                        </div>
+                    </div>
+                    <div className={`${styles.accordionWrapper} ${isDiskUsageOpen ? styles.accordionWrapperOpen : ''}`}>
+                        <div className={styles.accordionInner}>
+                            <div className={`${styles.sectionContent} ${styles.expandedContent}`}>
+                                {isDiskUsageOpen && <DiskUsage />}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div className={`${styles.sectionCard} ${isUpdatesOpen ? styles.sectionCardExpanded : ''}`}>
-                    <div className={styles.sectionHeader} onClick={handleToggleUpdates}>
+                    <div className={styles.sectionHeader} onClick={() => toggleExclusiveSection('updates')}>
                         <div className={styles.sectionTitleWrap}>
                             <h2 className={styles.formTitle}>App Updates & Changelog</h2>
                         </div>
