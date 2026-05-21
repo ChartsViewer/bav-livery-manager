@@ -10,8 +10,6 @@ A desktop utility that helps **BAVirtual (British Airways Virtual)** pilots inst
 
 ![Main UI Screenshot](./.github/screenshots/main-ui.png)
 
----
-
 ## ✨ Features
 
 - **One-click installs** for the full BAVirtual livery catalog into MSFS 2020 and MSFS 2024
@@ -24,8 +22,6 @@ A desktop utility that helps **BAVirtual (British Airways Virtual)** pilots inst
 - **Auto-updating** — new versions install themselves from GitHub releases
 - Lightweight Electron UI built with React + TypeScript
 
----
-
 ## 📦 Installation
 
 > Distributed only for **Windows (x64)** as the Manager supports only MSFS2020 and MSFS2024.
@@ -37,8 +33,6 @@ A desktop utility that helps **BAVirtual (British Airways Virtual)** pilots inst
 
 Future versions install themselves automatically, so you only need to do this once.
 
----
-
 ## 🧱 Built with
 
 - [Electron](https://www.electronjs.org/) + [Vite](https://vitejs.dev/)
@@ -46,7 +40,6 @@ Future versions install themselves automatically, so you only need to do this on
 - [TanStack Query](https://tanstack.com/query), [Zustand](https://zustand-demo.pmnd.rs/), [React Router](https://reactrouter.com/)
 - [Bun](https://bun.sh/) as the package manager
 
----
 
 ## 🧑‍💻 Development
 
@@ -66,15 +59,11 @@ bun run build:exe
 
 The renderer dev server runs on `http://localhost:5173`; Electron picks it up once the main-process TypeScript has compiled.
 
----
-
 ## 🐛 Reporting issues
 
 Bugs and feature requests live on **[GitHub Issues](https://github.com/p-sergienko/bav-livery-manager/issues)**.
 
 For livery-specific support (broken textures, missing aircraft, etc.), please raise a ticket via the **[BAV Support System](https://support.bavirtual.co.uk/)**.
-
----
 
 ## 📄 License
 
