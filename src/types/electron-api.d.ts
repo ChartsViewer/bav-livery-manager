@@ -1,4 +1,4 @@
-import type { Settings } from './livery';
+import type { Livery, Settings } from './livery';
 
 interface DownloadProgressEvent {
     liveryName: string;
