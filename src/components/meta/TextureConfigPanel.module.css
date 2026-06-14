@@ -1,0 +1,149 @@
+.panel {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  gap: 0;
+  background: var(--panel);
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 57px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border);
+  gap: 16px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--panel);
+  flex-shrink: 0;
+}
+
+.panelTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panelActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.revertBtn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 5px 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+  transition: border-color 0.1s, color 0.1s;
+}
+
+.revertBtn:hover { border-color: var(--danger); color: var(--danger); }
+
+.scanningMsg {
+  padding: 16px 24px;
+  font-size: 13px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.editorSection {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 16px 24px;
+  gap: 10px;
+}
+
+.editorHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.editorLabel {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.freshTag {
+  font-size: 9px;
+  font-weight: 600;
+  background: rgba(250, 176, 5, 0.12);
+  color: var(--warning);
+  border: 1px solid rgba(250, 176, 5, 0.25);
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.textarea {
+  flex: 1;
+  min-height: 160px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  font-family: monospace;
+  line-height: 1.6;
+  padding: 10px 12px;
+  resize: none;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.textarea:focus {
+  border-color: var(--focus);
+}
+
+.textarea::placeholder {
+  color: var(--muted);
+  font-style: italic;
+}
+
+
+.empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 40px;
+  text-align: center;
+}
+
+.emptyIcon {
+  font-size: 40px;
+  opacity: 0.4;
+}
+
+.emptySub {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0;
+}

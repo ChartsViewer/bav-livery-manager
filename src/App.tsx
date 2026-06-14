@@ -3,11 +3,13 @@ import { Layout } from '@/components/Layout';
 import { AuthTokenListener } from '@/components/AuthTokenListener';
 import { AppUpdateListener } from '@/components/AppUpdateListener';
 import { RequireAuth } from '@/components/RequireAuth';
+import { RequireAdmin } from '@/components/RequireAdmin';
 import { SearchPage } from '@/pages/SearchPage';
 import { PackagesPage } from '@/pages/PackagesPage';
 import { DownloadsPage } from '@/pages/DownloadsPage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { LoginPage } from '@/pages/LoginPage';
+import { MetaEditorPage } from '@/pages/MetaEditorPage';
 import { useInitializeLiveryStore } from '@/store/liveryStore';
 import { useInitializePackageStore } from '@/store/packageStore';
 import { useSessionHeartbeat } from '@/hooks/useSessionHeartbeat';
@@ -42,6 +44,9 @@ export const App = () => {
             <Route path="settings" element={<SettingsPage />} />
             <Route path="information/:liveryId" element={<InformationPage/>}></Route>
             <Route path="next-flight" element={<NextFlightPage />} />
+            <Route element={<RequireAdmin />}>
+              <Route path="meta-editor" element={<MetaEditorPage />} />
+            </Route>
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/search" replace />} />

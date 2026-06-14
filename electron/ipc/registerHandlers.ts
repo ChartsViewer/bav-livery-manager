@@ -1,6 +1,8 @@
 import path from 'node:path';
 import fs from 'fs-extra';
 import { dialog, ipcMain, nativeTheme, shell } from 'electron';
+import { generateLayout } from 'msfs-layout-generator';
+import { ZipArchive } from 'archiver';
 import type { OpenDialogOptions } from 'electron';
 import type { AppContext, DownloadResult, Settings } from '../types';
 import { detectSimulatorPaths } from '../services/simulatorPaths';
@@ -476,6 +478,379 @@ export function registerIpcHandlers(appContext: AppContext) {
             return { success: false, error: (error as Error).message };
         }
     });
+
+    let metaCancelRequested = false;
+
+    const META_MANIFEST_KEY_ORDER = [
+        'dependencies', 'content_type', 'title', 'manufacturer', 'package_version',
+        'minimum_game_version', 'minimum_compatibility_version', 'builder', 'creator',
+        'managerData',
+    ];
+    const META_MANAGER_KEY_ORDER = [
+        'name', 'aircraft', 'developer', 'engine', 'year', 'category',
+        'simulator', 'resolution', 'requiredPackages',
+    ];
+
+    function metaOrderManifest(raw: Record<string, unknown>): Record<string, unknown> {
+        const out: Record<string, unknown> = {};
+        for (const key of META_MANIFEST_KEY_ORDER) {
+            if (key === 'dependencies') {
+                out[key] = Array.isArray(raw[key]) ? raw[key] : [];
+                continue;
+            }
+            if (!(key in raw)) continue;
+            if (key === 'managerData' && raw[key] && typeof raw[key] === 'object') {
+                const mgr = raw[key] as Record<string, unknown>;
+                const orderedMgr: Record<string, unknown> = {};
+                for (const mk of META_MANAGER_KEY_ORDER) {
+                    if (mk in mgr && mgr[mk] != null && mgr[mk] !== '') orderedMgr[mk] = mgr[mk];
+                }
+                out[key] = orderedMgr;
+            } else {
+                out[key] = raw[key];
+            }
+        }
+        return out;
+    }
+
+    async function metaFindLiveryDirsRecursively(dir: string): Promise<string[]> {
+        if (await fs.pathExists(path.join(dir, 'manifest.json'))) return [dir];
+        let entries;
+        try { entries = await fs.readdir(dir, { withFileTypes: true }); } catch { return []; }
+        const results: string[] = [];
+        for (const entry of entries) {
+            if (!entry.isDirectory()) continue;
+            const found = await metaFindLiveryDirsRecursively(path.join(dir, entry.name));
+            results.push(...found);
+        }
+        return results;
+    }
+
+    async function metaFindLayoutDirsRecursively(dir: string): Promise<string[]> {
+        if (await fs.pathExists(path.join(dir, 'layout.json'))) return [dir];
+        let entries;
+        try { entries = await fs.readdir(dir, { withFileTypes: true }); } catch { return []; }
+        const results: string[] = [];
+        for (const entry of entries) {
+            if (!entry.isDirectory()) continue;
+            const found = await metaFindLayoutDirsRecursively(path.join(dir, entry.name));
+            results.push(...found);
+        }
+        return results;
+    }
+
+    async function metaFindFileRecursively(dir: string, filename: string): Promise<string | null> {
+        let entries;
+        try { entries = await fs.readdir(dir, { withFileTypes: true }); } catch { return null; }
+        const lowerFilename = filename.toLowerCase();
+        for (const entry of entries) {
+            const fullPath = path.join(dir, entry.name);
+            if (entry.isDirectory()) {
+                const found = await metaFindFileRecursively(fullPath, filename);
+                if (found) return found;
+            } else if (entry.name.toLowerCase() === lowerFilename) {
+                return fullPath;
+            }
+        }
+        return null;
+    }
+
+    async function metaFindAllFilesRecursively(dir: string, filename: string): Promise<string[]> {
+        let entries;
+        try { entries = await fs.readdir(dir, { withFileTypes: true }); } catch { return []; }
+        const lowerFilename = filename.toLowerCase();
+        const results: string[] = [];
+        for (const entry of entries) {
+            const fullPath = path.join(dir, entry.name);
+            if (entry.isDirectory()) {
+                const found = await metaFindAllFilesRecursively(fullPath, filename);
+                results.push(...found);
+            } else if (entry.name.toLowerCase() === lowerFilename) {
+                results.push(fullPath);
+            }
+        }
+        return results;
+    }
+
+    function metaExtractAtcId(content: string): string | null {
+        const patterns = [
+            /atc_id\s*=\s*"([^"]+)"/,
+            /atc_id\s*=\s*'([^']+)'/,
+            /atc_id\s*=\s*([^;\s\r\n]+)/,
+        ];
+        for (const pattern of patterns) {
+            const match = content.match(pattern);
+            if (match) return match[1].trim();
+        }
+        return null;
+    }
+
+    async function metaFindDirMatching(
+        dir: string,
+        predicate: (name: string) => boolean,
+        depth = 10
+    ): Promise<string | null> {
+        if (depth <= 0) return null;
+        let entries;
+        try { entries = await fs.readdir(dir, { withFileTypes: true }); } catch { return null; }
+        for (const entry of entries) {
+            if (!entry.isDirectory()) continue;
+            if (predicate(entry.name)) return path.join(dir, entry.name);
+            const found = await metaFindDirMatching(path.join(dir, entry.name), predicate, depth - 1);
+            if (found) return found;
+        }
+        return null;
+    }
+
+    async function metaResolveAssetTarget(liveryDir: string, assetType: string): Promise<string | null> {
+        if (assetType === 'manager-thumbnail') return liveryDir;
+        const fs20Dir = await metaFindDirMatching(liveryDir, (name) => /^texture\..+/i.test(name));
+        if (assetType === 'ingame-thumbnail') {
+            if (fs20Dir) return fs20Dir;
+            return await metaFindDirMatching(liveryDir, (name) => name.toLowerCase() === 'thumbnail');
+        }
+        if (assetType === 'texture') {
+            if (fs20Dir) return fs20Dir;
+            return await metaFindDirMatching(liveryDir, (name) => name.toLowerCase() === 'texture');
+        }
+        return null;
+    }
+
+    function metaLogTimestamp(): string {
+        return `[${new Date().toLocaleTimeString('en-GB', { hour12: false })}]`;
+    }
+
+    function metaLog(msg: string) {
+        const win = appContext.getMainWindow();
+        if (win && !win.isDestroyed()) win.webContents.send('meta-finaliser-log', `${metaLogTimestamp()} ${msg}`);
+    }
+
+    ipcMain.handle('meta-select-livery-directories', async () => {
+        const win = appContext.getMainWindow();
+        const opts = {
+            title: 'Select Livery Directories',
+            properties: ['openDirectory', 'multiSelections'] as Array<'openDirectory' | 'multiSelections'>,
+            buttonLabel: 'Add Liveries',
+        };
+        const result = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts);
+        return result.canceled ? [] : result.filePaths;
+    });
+
+    ipcMain.handle('meta-scan-parent-directory', async () => {
+        const win = appContext.getMainWindow();
+        const opts = {
+            title: 'Select Parent Directory to Scan',
+            properties: ['openDirectory'] as Array<'openDirectory'>,
+            buttonLabel: 'Scan',
+        };
+        const result = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts);
+        if (result.canceled || result.filePaths.length === 0) return [];
+        return await metaFindLiveryDirsRecursively(result.filePaths[0]);
+    });
+
+    ipcMain.handle('meta-read-manifest', async (_event, dirPath: string) => {
+        const manifestPath = path.join(dirPath, 'manifest.json');
+        try {
+            if (!(await fs.pathExists(manifestPath))) return null;
+            return await fs.readJson(manifestPath);
+        } catch { return null; }
+    });
+
+    ipcMain.handle(
+        'meta-write-manifests',
+        async (_event, updates: Array<{ dirPath: string; manifest: Record<string, unknown> }>) => {
+            const errors: string[] = [];
+            for (const { dirPath, manifest } of updates) {
+                try {
+                    await fs.writeJson(path.join(dirPath, 'manifest.json'), metaOrderManifest(manifest), { spaces: 2 });
+                } catch (err) {
+                    errors.push(`${path.basename(dirPath)}: ${err instanceof Error ? err.message : String(err)}`);
+                }
+            }
+            return { success: errors.length === 0, errors };
+        }
+    );
+
+    ipcMain.handle('meta-find-registration', async (_event, dirPath: string) => {
+        for (const cfgName of ['livery.cfg', 'aircraft.cfg']) {
+            const cfgPath = await metaFindFileRecursively(dirPath, cfgName);
+            if (!cfgPath) continue;
+            try {
+                const content = await fs.readFile(cfgPath, 'utf-8');
+                const atcId = metaExtractAtcId(content);
+                if (atcId) return atcId;
+            } catch { /* try next */ }
+        }
+        return null;
+    });
+
+    ipcMain.handle('meta-select-workspace-directory', async () => {
+        const win = appContext.getMainWindow();
+        const opts = {
+            title: 'Select Workspace Directory',
+            properties: ['openDirectory'] as Array<'openDirectory'>,
+            buttonLabel: 'Select Workspace',
+        };
+        const result = win ? await dialog.showOpenDialog(win, opts) : await dialog.showOpenDialog(opts);
+        return result.canceled ? null : result.filePaths[0];
+    });
+
+    ipcMain.handle('meta-run-layout-generator', async (_event, workspaceDir: string) => {
+        metaCancelRequested = false;
+        const layoutDirs = await metaFindLayoutDirsRecursively(workspaceDir);
+        if (layoutDirs.length === 0) { metaLog('No packages with layout.json found in workspace'); return false; }
+
+        metaLog(`Found ${layoutDirs.length} package(s) — generating layouts...`);
+        let success = 0;
+        let failed = 0;
+
+        for (const dir of layoutDirs) {
+            if (metaCancelRequested) { metaLog('Cancelled'); break; }
+            metaLog(`Processing: ${path.basename(dir)}`);
+            try {
+                await generateLayout(dir, { force: true, quiet: true });
+                metaLog('  ✓ layout.json regenerated');
+                success++;
+            } catch (err) {
+                metaLog(`  ✗ ${err instanceof Error ? err.message : String(err)}`);
+                failed++;
+            }
+        }
+
+        if (!metaCancelRequested) metaLog(`Layout generation done — ${success} succeeded, ${failed} failed`);
+        return !metaCancelRequested && failed === 0;
+    });
+
+    ipcMain.handle('meta-run-zip-packages', async (_event, workspaceDir: string) => {
+        metaCancelRequested = false;
+        const packageDirs = await metaFindLayoutDirsRecursively(workspaceDir);
+        if (packageDirs.length === 0) { metaLog('No packages with layout.json found in workspace'); return false; }
+
+        metaLog(`Found ${packageDirs.length} package(s) — zipping...`);
+        let success = 0;
+        let failed = 0;
+
+        for (const dirPath of packageDirs) {
+            if (metaCancelRequested) { metaLog('Cancelled'); break; }
+            const name = path.basename(dirPath);
+            const zipPath = path.join(path.dirname(dirPath), `${name}.zip`);
+            metaLog(`Zipping: ${name}`);
+            try {
+                await new Promise<void>((resolve, reject) => {
+                    const output = fs.createWriteStream(zipPath);
+                    const archive = new ZipArchive({ zlib: { level: 9 } });
+                    output.on('close', resolve);
+                    archive.on('error', reject);
+                    archive.pipe(output);
+                    archive.directory(dirPath, false);
+                    archive.finalize();
+                });
+                if (!metaCancelRequested) { metaLog(`  ✓ ${name}.zip → ${path.dirname(dirPath)}`); success++; }
+            } catch (err) {
+                metaLog(`  ✗ ${err instanceof Error ? err.message : String(err)}`);
+                failed++;
+            }
+        }
+
+        if (!metaCancelRequested) metaLog(`Zip packaging done — ${success} succeeded, ${failed} failed`);
+        return !metaCancelRequested && failed === 0;
+    });
+
+    ipcMain.handle('meta-cancel-finaliser', () => {
+        metaCancelRequested = true;
+        metaLog('Cancelling...');
+    });
+
+    ipcMain.handle(
+        'meta-select-asset-files',
+        async (_event, filters: { name: string; extensions: string[] }[], multiSelect: boolean) => {
+            const properties: Array<'openFile' | 'multiSelections'> = ['openFile'];
+            if (multiSelect) properties.push('multiSelections');
+            const win = appContext.getMainWindow();
+            const result = win
+                ? await dialog.showOpenDialog(win, { properties, filters })
+                : await dialog.showOpenDialog({ properties, filters });
+            return result.canceled ? [] : result.filePaths;
+        }
+    );
+
+    ipcMain.handle('meta-scan-texture-cfg', async (_event, liveryDirs: string[]) => {
+        const normalize = (s: string) => s.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trimEnd();
+        const results = [];
+        for (const liveryDir of liveryDirs) {
+            const dirName = path.basename(liveryDir);
+            const cfgPaths = await metaFindAllFilesRecursively(liveryDir, 'texture.cfg');
+            let content: string | null = null;
+            let allMatch = true;
+            if (cfgPaths.length > 0) {
+                try { content = normalize(await fs.readFile(cfgPaths[0], 'utf-8')); } catch { /* ignore */ }
+                for (const p of cfgPaths.slice(1)) {
+                    try {
+                        const other = normalize(await fs.readFile(p, 'utf-8'));
+                        if (other !== content) { allMatch = false; break; }
+                    } catch { allMatch = false; break; }
+                }
+            }
+            results.push({ liveryDir, dirName, cfgPaths, content, allMatch });
+        }
+        return results;
+    });
+
+    ipcMain.handle('meta-write-texture-cfg', async (_event, liveryDirs: string[], content: string) => {
+        const results = [];
+        for (const liveryDir of liveryDirs) {
+            const dirName = path.basename(liveryDir);
+            const cfgPaths = await metaFindAllFilesRecursively(liveryDir, 'texture.cfg');
+            if (cfgPaths.length > 0) {
+                const errors: string[] = [];
+                for (const p of cfgPaths) {
+                    try { await fs.writeFile(p, content, 'utf-8'); }
+                    catch (err) { errors.push(err instanceof Error ? err.message : String(err)); }
+                }
+                results.push({ liveryDir, dirName, success: errors.length === 0, path: cfgPaths[0], error: errors[0] });
+            } else {
+                const targetDir = await metaResolveAssetTarget(liveryDir, 'texture') ?? liveryDir;
+                const newPath = path.join(targetDir, 'texture.cfg');
+                try {
+                    await fs.ensureDir(targetDir);
+                    await fs.writeFile(newPath, content, 'utf-8');
+                    results.push({ liveryDir, dirName, success: true, path: newPath });
+                } catch (err) {
+                    results.push({ liveryDir, dirName, success: false, path: null, error: err instanceof Error ? err.message : String(err) });
+                }
+            }
+        }
+        return results;
+    });
+
+    ipcMain.handle(
+        'meta-copy-asset-to-liveries',
+        async (
+            _event,
+            filePaths: string[],
+            liveryDirs: string[],
+            assetType: 'manager-thumbnail' | 'ingame-thumbnail' | 'texture'
+        ) => {
+            const results: Array<{ liveryName: string; success: boolean; targetDir: string | null; error?: string }> = [];
+            for (const liveryDir of liveryDirs) {
+                const liveryName = path.basename(liveryDir);
+                const targetDir = await metaResolveAssetTarget(liveryDir, assetType);
+                if (!targetDir) {
+                    results.push({ liveryName, success: false, targetDir: null, error: 'Target folder not found' });
+                    continue;
+                }
+                try {
+                    for (const filePath of filePaths) {
+                        await fs.copy(filePath, path.join(targetDir, path.basename(filePath)), { overwrite: true });
+                    }
+                    results.push({ liveryName, success: true, targetDir });
+                } catch (err) {
+                    results.push({ liveryName, success: false, targetDir, error: err instanceof Error ? err.message : String(err) });
+                }
+            }
+            return results;
+        }
+    );
 
     handlersRegistered = true;
 }
