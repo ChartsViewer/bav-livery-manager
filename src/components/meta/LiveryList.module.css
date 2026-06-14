@@ -64,7 +64,7 @@
 }
 
 .searchInput::placeholder {
-  color: rgba(179, 179, 179, 0.5);
+  color: var(--muted);
 }
 
 .clearBtn {
@@ -74,7 +74,7 @@
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: rgba(179, 179, 179, 0.5);
+  color: var(--muted);
   cursor: pointer;
   font-size: 15px;
   line-height: 1;
@@ -89,7 +89,7 @@
   list-style: none;
   padding: 16px 12px;
   font-size: 12px;
-  color: rgba(179, 179, 179, 0.5);
+  color: var(--muted);
   text-align: center;
 }
 
@@ -117,7 +117,7 @@
 }
 
 .divider {
-  color: rgba(179, 179, 179, 0.5);
+  color: var(--muted);
 }
 
 .selectedCount {
@@ -199,7 +199,7 @@
 
 .changeBadge {
   font-size: 8px;
-  color: #fab005;
+  color: var(--warning);
   line-height: 1;
 }
 
@@ -207,7 +207,7 @@
   flex-shrink: 0;
   background: none;
   border: none;
-  color: rgba(179, 179, 179, 0.5);
+  color: var(--muted);
   cursor: pointer;
   font-size: 16px;
   line-height: 1;
@@ -230,9 +230,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(179, 179, 179, 0.5);
+  color: var(--muted);
   font-size: 13px;
   padding: 40px 16px;
   text-align: center;
   list-style: none;
+}
+
+.emphasis {
+  font-weight: 600;
 }

@@ -120,7 +120,7 @@
 }
 
 .actionBtn:hover:not(:disabled) {
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: var(--border);
   color: var(--text);
 }
 

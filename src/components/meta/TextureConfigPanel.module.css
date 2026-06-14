@@ -90,7 +90,7 @@
   font-size: 9px;
   font-weight: 600;
   background: rgba(250, 176, 5, 0.12);
-  color: #fab005;
+  color: var(--warning);
   border: 1px solid rgba(250, 176, 5, 0.25);
   padding: 1px 6px;
   border-radius: 4px;
@@ -119,7 +119,7 @@
 }
 
 .textarea::placeholder {
-  color: rgba(179, 179, 179, 0.5);
+  color: var(--muted);
   font-style: italic;
 }
 
@@ -142,4 +142,8 @@
   opacity: 0.4;
 }
 
-.emptySub { color: rgba(179, 179, 179, 0.5); font-size: 12px; margin: 0; }
+.emptySub {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0;
+}

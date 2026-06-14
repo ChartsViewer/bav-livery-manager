@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import { useMetaManifestStore } from '@/store/metaManifestStore';
-import { CheckboxChecked, CheckboxEmpty } from '@/components/Icons';
+import { CheckboxChecked } from '@/components/Icons/CheckboxChecked';
+import { CheckboxEmpty } from '@/components/Icons/CheckboxEmpty';
 import styles from './LiveryList.module.css';
 
 export function MetaLiveryList() {
     const { liveries, selectedIds, toggleSelect, selectAll, selectNone, removeLivery } = useMetaManifestStore();
     const [search, setSearch] = useState('');
 
-    const filtered = search.trim()
-        ? liveries.filter(
-            (l) =>
-                l.dirName.toLowerCase().includes(search.toLowerCase()) ||
-                (l.manifest.title as string | undefined)?.toLowerCase().includes(search.toLowerCase())
-        )
+    const query = search.trim().toLowerCase();
+    const filtered = query
+        ? liveries.filter((l) => {
+              const title = (l.manifest.title as string | undefined)?.toLowerCase() ?? '';
+              return l.dirName.toLowerCase().includes(query) || title.includes(query);
+          })
         : liveries;
 
     return (
@@ -48,7 +49,7 @@ export function MetaLiveryList() {
 
             <ul className={styles.list}>
                 {liveries.length === 0 ? (
-                    <li className={styles.empty}><span>Add liveries via the <span style={{ fontWeight: 600 }}>Add Liveries</span> button, or scan a directory for liveries using the <span style={{ fontWeight: 600 }}>Scan Folder</span> button</span></li>
+                    <li className={styles.empty}><span>Add liveries via the <span className={styles.emphasis}>Add Liveries</span> button, or scan a directory for liveries using the <span className={styles.emphasis}>Scan Folder</span> button</span></li>
                 ) : (
                     <>
                         {filtered.map((livery) => {

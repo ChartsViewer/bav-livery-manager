@@ -42,7 +42,7 @@
 
 .unsavedBadge {
   font-size: 11px;
-  color: #fab005;
+  color: var(--warning);
   font-weight: 600;
   background: rgba(250, 176, 5, 0.12);
   padding: 2px 8px;
@@ -78,7 +78,7 @@
   align-items: center;
   gap: 8px;
   padding: 9px 24px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--card);
   border-bottom: 1px solid var(--border);
   font-size: 12px;
   color: var(--muted);
@@ -192,7 +192,7 @@
 }
 
 .mixedTag {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--buttons);
   color: var(--muted);
   font-size: 9px;
   padding: 1px 5px;
@@ -216,7 +216,7 @@
 }
 
 .input:focus { border-color: var(--focus); }
-.input::placeholder { color: rgba(179, 179, 179, 0.5); font-style: italic; }
+.input::placeholder { color: var(--muted); font-style: italic; }
 
 .inputMixed {
   border-color: rgba(255, 255, 255, 0.15);
@@ -243,4 +243,4 @@
 }
 
 .emptyIcon { font-size: 40px; opacity: 0.4; }
-.emptySub { color: rgba(179, 179, 179, 0.5); font-size: 12px; margin: 0; }
+.emptySub { color: var(--muted); font-size: 12px; margin: 0; }

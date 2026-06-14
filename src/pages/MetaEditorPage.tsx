@@ -245,7 +245,7 @@ function FinaliserTab() {
                             </div>
                             <div className={styles.stepBody}>
                                 <p className={styles.stepDesc}>Recursively finds every package with a layout.json and runs MSFSLayoutGenerator.exe to regenerate it.</p>
-                                <button className={styles.actionBtn} style={{ justifyContent: 'center' }} onClick={handleRunLayouts} disabled={!canRun}>Run Step 1</button>
+                                <button className={styles.actionBtn} onClick={handleRunLayouts} disabled={!canRun}>Run Step 1</button>
                             </div>
                         </div>
                         <div className={styles.step}>
@@ -255,7 +255,7 @@ function FinaliserTab() {
                             </div>
                             <div className={styles.stepBody}>
                                 <p className={styles.stepDesc}>Recursively finds every package with a layout.json and zips its contents next to the source folder.</p>
-                                <button className={styles.actionBtn} style={{ justifyContent: 'center' }} onClick={handleRunZips} disabled={!canRun}>Run Step 2</button>
+                                <button className={styles.actionBtn} onClick={handleRunZips} disabled={!canRun}>Run Step 2</button>
                             </div>
                         </div>
                     </div>
@@ -324,7 +324,7 @@ function EditorTab() {
                 <button className={styles.btnSecondary} onClick={handleScanParent}><Search size={13} />Scan Folder</button>
                 {liveries.length > 0 && (
                     <>
-                        <button className={styles.btnSaveAll} style={{ marginLeft: 'auto' }} onClick={saveAll} disabled={!hasChanges || isSaving}>
+                        <button className={styles.btnSaveAll} onClick={saveAll} disabled={!hasChanges || isSaving}>
                             {isSaving ? 'Saving…' : `Save All${changedCount > 0 ? ` (${changedCount})` : ''}`}
                         </button>
                         <button className={styles.btnDanger} onClick={clearAll}>Clear</button>
