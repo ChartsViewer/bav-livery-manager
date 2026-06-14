@@ -30,6 +30,7 @@ const INVOKE_CHANNELS = [
     'get-app-version',
     'get-disk-usage',
     'open-path',
+    'set-titlebar-overlay',
 
     'meta-select-livery-directories',
     'meta-scan-parent-directory',
@@ -151,6 +152,10 @@ const api: ElectronAPI = {
     setWindowTitle: (title) => {
         ensureInvokeChannel('set-window-title');
         return ipcRenderer.invoke('set-window-title', title);
+    },
+    setTitleBarOverlay: (color: string, symbolColor: string, isDark: boolean) => {
+        ensureInvokeChannel('set-titlebar-overlay');
+        return ipcRenderer.invoke('set-titlebar-overlay', color, symbolColor, isDark);
     },
     onDownloadProgress: (callback) => {
         ensureOnChannel('download-progress');

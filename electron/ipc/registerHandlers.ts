@@ -1,6 +1,6 @@
 import path from 'node:path';
 import fs from 'fs-extra';
-import { dialog, ipcMain, shell } from 'electron';
+import { dialog, ipcMain, nativeTheme, shell } from 'electron';
 import { generateLayout } from 'msfs-layout-generator';
 import { ZipArchive } from 'archiver';
 import type { OpenDialogOptions } from 'electron';
@@ -384,6 +384,13 @@ export function registerIpcHandlers(appContext: AppContext) {
         targetWindow.setTitle(title);
     });
 
+    ipcMain.handle('set-titlebar-overlay', (_event, color: string, symbolColor: string, isDark: boolean) => {
+        const targetWindow = appContext.getMainWindow();
+        if (!targetWindow || targetWindow.isDestroyed()) return;
+
+        nativeTheme.themeSource = isDark ? 'dark' : 'light';
+        targetWindow.setTitleBarOverlay({ color, symbolColor });
+    });
 
     ipcMain.handle('get-disk-usage', async (): Promise<DiskUsageReport> => {
         try {
