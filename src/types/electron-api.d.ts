@@ -144,6 +144,7 @@ export interface ElectronAPI {
     getInstalledLiveries: () => Promise<InstalledLiveryRecord[]>;
     setTaskbarProgress: (progress: number, mode?: 'normal' | 'indeterminate' | 'paused' | 'error' | 'none') => Promise<void>;
     setWindowTitle: (title: string) => Promise<void>;
+    setTitleBarOverlay: (color: string, symbolColor: string, isDark: boolean) => Promise<void>;
     onDownloadProgress: (callback: ((event: DownloadProgressEvent) => void) | null) => void;
     removeAllDownloadProgressListeners: () => void;
     onPackageProgress: (callback: ((event: PackageProgressEvent) => void) | null) => void;

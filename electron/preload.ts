@@ -29,7 +29,8 @@ const INVOKE_CHANNELS = [
     'install-app-update',
     'get-app-version',
     'get-disk-usage',
-    'open-path'
+    'open-path',
+    'set-titlebar-overlay',
 ] as const;
 
 const ON_CHANNELS = ['download-progress', 'package-progress', 'auth-token', 'app-update-status'] as const;
@@ -137,6 +138,10 @@ const api: ElectronAPI = {
     setWindowTitle: (title) => {
         ensureInvokeChannel('set-window-title');
         return ipcRenderer.invoke('set-window-title', title);
+    },
+    setTitleBarOverlay: (color: string, symbolColor: string, isDark: boolean) => {
+        ensureInvokeChannel('set-titlebar-overlay');
+        return ipcRenderer.invoke('set-titlebar-overlay', color, symbolColor, isDark);
     },
     onDownloadProgress: (callback) => {
         ensureOnChannel('download-progress');
