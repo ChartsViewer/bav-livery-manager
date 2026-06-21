@@ -1,8 +1,8 @@
 import path from 'node:path';
 import fs from 'fs-extra';
+import archiver from 'archiver';
 import { dialog, ipcMain, nativeTheme, shell } from 'electron';
 import { generateLayout } from 'msfs-layout-generator';
-import { ZipArchive } from 'archiver';
 import type { OpenDialogOptions } from 'electron';
 import type { AppContext, DownloadResult, Settings } from '../types';
 import { detectSimulatorPaths } from '../services/simulatorPaths';
@@ -738,7 +738,7 @@ export function registerIpcHandlers(appContext: AppContext) {
             try {
                 await new Promise<void>((resolve, reject) => {
                     const output = fs.createWriteStream(zipPath);
-                    const archive = new ZipArchive({ zlib: { level: 9 } });
+                    const archive = archiver('zip', { zlib: { level: 9 } });
                     output.on('close', resolve);
                     archive.on('error', reject);
                     archive.pipe(output);
