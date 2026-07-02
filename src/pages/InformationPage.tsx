@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { ReturnButton } from "@/components/ReturnButton";
 import { PANEL_BASE_URL } from "@shared/constants";
+import { panelFetch } from "@/api/panelClient";
 import type { Livery, Resolution, Simulator } from "@/types/livery";
 import styles from "@/pages/InformationPage.module.css"
 
@@ -177,15 +178,12 @@ export function InformationPage() {
         if (!liveryId || !token) return;
         let aborted = false;
         setChangelogError(null);
-        fetch(`${PANEL_BASE_URL}/api/v2/liveries/${liveryId}/changelog`, {
-            headers: { Authorization: `Bearer ${token}` },
-            cache: "no-store",
-        })
-            .then(async (res) => {
+        panelFetch(`${PANEL_BASE_URL}/api/v2/liveries/${liveryId}/changelog`)
+            .then((res) => {
                 if (!res.ok) throw new Error(`Status ${res.status}`);
-                return res.json();
+                return res.body as { data?: { versions?: ChangelogEntry[] } } | ChangelogEntry[];
             })
-            .then((body: { data?: { versions?: ChangelogEntry[] } } | ChangelogEntry[]) => {
+            .then((body) => {
                 if (aborted) return;
                 const versions = Array.isArray(body)
                     ? body

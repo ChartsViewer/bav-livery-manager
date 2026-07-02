@@ -22,6 +22,9 @@ const INVOKE_CHANNELS = [
     'get-installed-liveries',
     'detect-sim-paths',
     'auth-open-panel',
+    'auth-get-session',
+    'auth-sign-out',
+    'api-fetch',
     'set-taskbar-progress',
     'set-window-title',
     'check-for-app-update',
@@ -47,7 +50,7 @@ const INVOKE_CHANNELS = [
     'meta-write-texture-cfg',
 ] as const;
 
-const ON_CHANNELS = ['download-progress', 'package-progress', 'auth-token', 'app-update-status', 'meta-finaliser-log'] as const;
+const ON_CHANNELS = ['download-progress', 'package-progress', 'auth-token', 'auth-token-refreshed', 'auth-session-expired', 'app-update-status', 'meta-finaliser-log'] as const;
 
 type InvokeChannel = typeof INVOKE_CHANNELS[number];
 type OnChannel = typeof ON_CHANNELS[number];
@@ -192,6 +195,38 @@ const api: ElectronAPI = {
                 callback(payload);
             });
         }
+    },
+    onAuthTokenRefreshed: (callback) => {
+        ensureOnChannel('auth-token-refreshed');
+        ipcRenderer.removeAllListeners('auth-token-refreshed');
+
+        if (callback && typeof callback === 'function') {
+            ipcRenderer.on('auth-token-refreshed', (_event, session) => {
+                callback(session);
+            });
+        }
+    },
+    onAuthSessionExpired: (callback) => {
+        ensureOnChannel('auth-session-expired');
+        ipcRenderer.removeAllListeners('auth-session-expired');
+
+        if (callback && typeof callback === 'function') {
+            ipcRenderer.on('auth-session-expired', () => {
+                callback();
+            });
+        }
+    },
+    authGetSession: () => {
+        ensureInvokeChannel('auth-get-session');
+        return ipcRenderer.invoke('auth-get-session');
+    },
+    authSignOut: () => {
+        ensureInvokeChannel('auth-sign-out');
+        return ipcRenderer.invoke('auth-sign-out');
+    },
+    apiFetch: (url, init) => {
+        ensureInvokeChannel('api-fetch');
+        return ipcRenderer.invoke('api-fetch', url, init);
     },
     checkForAppUpdate: () => {
         ensureInvokeChannel('check-for-app-update');

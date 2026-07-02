@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { REMOTE_CATALOG_URL } from '@shared/constants';
 import type { CatalogResponse } from '@/types/catalog';
+import { panelFetch, createStatusError, unwrapData } from '@/api/panelClient';
 
 export const useCatalogQuery = (token: string | null) => {
     return useQuery<CatalogResponse>({
@@ -10,23 +11,17 @@ export const useCatalogQuery = (token: string | null) => {
             if (!token) {
                 throw new Error('Missing auth token');
             }
-            const response = await fetch(REMOTE_CATALOG_URL, {
-                headers: { Authorization: `Bearer ${token}` },
-                cache: 'no-store'
-            });
+            const response = await panelFetch(REMOTE_CATALOG_URL);
 
             if (response.status === 401 || response.status === 403) {
-                const error: Error & { status?: number } = new Error('Unauthorized');
-                error.status = response.status;
-                throw error;
+                throw createStatusError(response.status, 'Unauthorized');
             }
 
             if (!response.ok) {
                 throw new Error(`Catalog request failed with status ${response.status}`);
             }
 
-            const body = (await response.json()) as { data?: CatalogResponse } | CatalogResponse;
-            return ('data' in (body as object) ? (body as { data: CatalogResponse }).data : body) as CatalogResponse;
+            return unwrapData<CatalogResponse>(response.body);
         },
         staleTime: 15 * 60 * 1000,
         gcTime: 30 * 60 * 1000,

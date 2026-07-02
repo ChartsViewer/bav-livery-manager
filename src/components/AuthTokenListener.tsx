@@ -9,6 +9,14 @@ export const AuthTokenListener = () => {
     const clearPendingLiveryRedirect = useAuthStore((state) => state.clearPendingLiveryRedirect);
     const navigate = useNavigate();
 
+    // Restore a persisted session from the main process on launch (silent
+    // refresh happens there before this resolves).
+    useEffect(() => {
+        useAuthStore.getState().restoreSession().catch((error) => {
+            console.warn('Session restore failed', error);
+        });
+    }, []);
+
     useEffect(() => {
         const api = window.electronAPI;
         if (!api?.onAuthToken) {
@@ -21,8 +29,20 @@ export const AuthTokenListener = () => {
             }
         });
 
+        api.onAuthTokenRefreshed?.((session) => {
+            if (session?.token) {
+                useAuthStore.getState().applyRefreshedToken(session.token);
+            }
+        });
+
+        api.onAuthSessionExpired?.(() => {
+            useAuthStore.getState().handleSessionExpired();
+        });
+
         return () => {
             api.onAuthToken?.(null);
+            api.onAuthTokenRefreshed?.(null);
+            api.onAuthSessionExpired?.(null);
         };
     }, [applyBrowserToken]);
 
