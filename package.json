@@ -15,7 +15,6 @@
     "build:exe:publish": "bun run build && electron-builder --win --x64 --publish always",
     "start": "bun run build && electron .",
     "electron": "electron .",
-    "test": "bun test electron",
     "generate-icons": "node scripts/generate-icons.js"
   },
   "author": "Pavel Sergienko, Laurie Cooper",
