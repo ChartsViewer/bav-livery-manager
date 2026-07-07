@@ -7,10 +7,10 @@ export const RequireAuth = () => {
     const status = useAuthStore((state) => state.status);
     const location = useLocation();
 
-    if (status === 'awaiting-browser' || status === 'verifying') {
+    if (status === 'awaiting-browser' || status === 'verifying' || status === 'restoring') {
         return (
             <div className={styles.guard}>
-                <p>{status === 'verifying' ? 'Verifying session…' : 'Verifying access…'}</p>
+                <p>{status === 'restoring' ? 'Restoring session…' : status === 'verifying' ? 'Verifying session…' : 'Verifying access…'}</p>
             </div>
         );
     }

@@ -2,12 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { REMOTE_PACKAGES_LIST_URL } from '@shared/constants';
 import { useAuthStore } from '@/store/authStore';
 import type { Package, RemotePackagesPayload } from '@/types/package';
-
-const createStatusError = (status: number, message: string) => {
-    const error: Error & { status?: number } = new Error(message);
-    error.status = status;
-    return error;
-};
+import { panelFetch, createStatusError, unwrapData } from '@/api/panelClient';
 
 export const usePackagesQuery = () => {
     const token = useAuthStore((state) => state.token);
@@ -18,10 +13,7 @@ export const usePackagesQuery = () => {
         queryFn: async (): Promise<RemotePackagesPayload> => {
             if (!token) throw new Error('Missing auth token');
 
-            const response = await fetch(REMOTE_PACKAGES_LIST_URL, {
-                headers: { Authorization: `Bearer ${token}` },
-                cache: 'no-store'
-            });
+            const response = await panelFetch(REMOTE_PACKAGES_LIST_URL);
 
             if (response.status === 401 || response.status === 403) {
                 throw createStatusError(response.status, 'Unauthorized');
@@ -31,10 +23,7 @@ export const usePackagesQuery = () => {
                 throw createStatusError(response.status, `Packages request failed with status ${response.status}`);
             }
 
-            const body = (await response.json()) as { data?: RemotePackagesPayload } | RemotePackagesPayload;
-            return ('data' in (body as object)
-                ? (body as { data: RemotePackagesPayload }).data
-                : body) as RemotePackagesPayload;
+            return unwrapData<RemotePackagesPayload>(response.body);
         },
         select: (data): Package[] => data.packages ?? [],
         refetchOnWindowFocus: false,

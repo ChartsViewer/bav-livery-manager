@@ -21,7 +21,22 @@ import {
     validatePackageInstallations
 } from '../services/installedPackagesStore';
 import { fetchWithTimeout } from '../utils/network';
+import { getAuthManager } from '../services/auth/authService';
+import { PANEL_BASE_URL } from '../../shared/constants';
 import * as versionManager from '../versionManager';
+
+interface ApiFetchInit {
+    method?: string;
+    headers?: Record<string, string>;
+    body?: string;
+}
+
+export interface ApiFetchResult {
+    ok: boolean;
+    status: number;
+    body: unknown;
+    error?: string;
+}
 
 interface DiskUsageEntry {
     type: 'livery' | 'package';
@@ -166,9 +181,57 @@ export function registerIpcHandlers(appContext: AppContext) {
         }
     });
 
-    ipcMain.handle('fetch-liveries', async (_event, authToken: string | null) => {
+    ipcMain.handle('fetch-liveries', async () => {
         console.log('Fetching liveries from remote server...');
-        return fetchRemoteLiveryList(authToken);
+        return fetchRemoteLiveryList();
+    });
+
+    // Single authenticated-HTTP entry point for the renderer: the main process
+    // attaches the bearer token and transparently refreshes it on 401.
+    ipcMain.handle('api-fetch', async (_event, url: string, init?: ApiFetchInit): Promise<ApiFetchResult> => {
+        if (typeof url !== 'string' || !url.startsWith(`${PANEL_BASE_URL}/`)) {
+            return { ok: false, status: 0, body: null, error: 'URL not allowed' };
+        }
+        try {
+            const response = await getAuthManager().authorizedFetch(url, {
+                method: init?.method ?? 'GET',
+                headers: init?.headers,
+                body: init?.body
+            });
+            const text = await response.text();
+            let body: unknown = null;
+            if (text) {
+                try {
+                    body = JSON.parse(text);
+                } catch {
+                    body = text;
+                }
+            }
+            return { ok: response.ok, status: response.status, body };
+        } catch (error) {
+            return { ok: false, status: 0, body: null, error: (error as Error).message };
+        }
+    });
+
+    ipcMain.handle('auth-get-session', async () => {
+        try {
+            const manager = getAuthManager();
+            // Gate on the one-time launch restore, but answer with the current
+            // session — a deep-link sign-in may have arrived since.
+            await manager.initialize();
+            return manager.getSessionSnapshot();
+        } catch (error) {
+            console.error('Failed to resolve auth session:', (error as Error).message);
+            return null;
+        }
+    });
+
+    ipcMain.handle('auth-sign-out', async () => {
+        try {
+            await getAuthManager().signOut();
+        } catch (error) {
+            console.error('Failed to clear auth session:', (error as Error).message);
+        }
     });
 
     ipcMain.handle(
@@ -181,8 +244,7 @@ export function registerIpcHandlers(appContext: AppContext) {
             liveryDeveloper: string,
             aircraft: string,
             simulator: 'MSFS2020' | 'MSFS2024',
-            resolution: string,
-            authToken: string | null
+            resolution: string
         ): Promise<DownloadResult> => {
         const simulatorActive = await isSimulatorRunning();
         if (simulatorActive) {
@@ -202,8 +264,7 @@ export function registerIpcHandlers(appContext: AppContext) {
                 simulator,
                 resolution,
                 settings,
-                appContext,
-                authToken
+                appContext
         });
         }
     );
@@ -220,8 +281,7 @@ export function registerIpcHandlers(appContext: AppContext) {
             slug: string,
             title: string,
             version: string | null,
-            simulator: 'MSFS2020' | 'MSFS2024',
-            authToken: string | null
+            simulator: 'MSFS2020' | 'MSFS2024'
         ): Promise<DownloadResult> => {
             const simulatorActive = await isSimulatorRunning();
             if (simulatorActive) {
@@ -239,8 +299,7 @@ export function registerIpcHandlers(appContext: AppContext) {
                 version,
                 simulator,
                 settings,
-                appContext,
-                authToken
+                appContext
             });
         }
     );

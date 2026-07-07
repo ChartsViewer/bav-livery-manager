@@ -6,6 +6,7 @@ import { autoUpdater } from 'electron-updater';
 import type { ProgressInfo, UpdateInfo } from 'electron-updater';
 import log from 'electron-log';
 import { registerIpcHandlers } from './ipc/registerHandlers';
+import { initAuthService, tryGetAuthManager } from './services/auth/authService';
 import type { AppContext } from './types';
 import { installExtension,REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
 
@@ -300,6 +301,8 @@ function parseAuthPayload(rawUrl: string) {
 
         return {
             token,
+            refresh: parsed.searchParams.get('refresh'),
+            expiresIn: parsed.searchParams.get('expiresIn'),
             session: parsed.searchParams.get('session'),
             role: parsed.searchParams.get('role'),
             bawId: parsed.searchParams.get('bawId'),
@@ -315,10 +318,20 @@ function parseAuthPayload(rawUrl: string) {
 }
 
 function forwardAuthPayload(rawUrl: string) {
-    const payload = parseAuthPayload(rawUrl);
-    if (!payload) {
+    const parsed = parseAuthPayload(rawUrl);
+    if (!parsed) {
         return;
     }
+
+    // The refresh token stays in the main process only; the renderer gets the
+    // access token and profile fields.
+    const { refresh, expiresIn, ...payload } = parsed;
+    const expiresInSec = expiresIn !== null ? Number(expiresIn) : null;
+    tryGetAuthManager()?.setSession({
+        accessToken: parsed.token,
+        refreshToken: refresh,
+        expiresInSec: Number.isFinite(expiresInSec) ? expiresInSec : null
+    }).catch((error) => console.error('Failed to store auth session:', (error as Error).message));
 
     if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send('auth-token', payload);
@@ -368,6 +381,21 @@ app.whenReady().then(async () => {
     } else {
         app.setAsDefaultProtocolClient(AUTH_PROTOCOL);
     }
+
+    const sendToMainWindow = (channel: string, data?: unknown) => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.webContents.send(channel, data);
+        }
+    };
+
+    const authManager = initAuthService({
+        onAccessTokenRefreshed: (session) => sendToMainWindow('auth-token-refreshed', session),
+        onSessionExpired: () => sendToMainWindow('auth-session-expired')
+    });
+    // Launch refresh: renderer awaits the result via the auth-get-session IPC.
+    void authManager.initialize().catch((error) => {
+        console.error('Failed to restore auth session on launch:', (error as Error).message);
+    });
 
     createWindow();
     registerIpcHandlers(appContext);

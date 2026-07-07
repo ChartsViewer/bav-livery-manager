@@ -41,6 +41,24 @@ export interface AuthTokenPayload {
     liveryId?: string | null;
 }
 
+export interface AuthSessionSnapshot {
+    token: string;
+    expiresAt: number;
+}
+
+export interface ApiFetchInit {
+    method?: string;
+    headers?: Record<string, string>;
+    body?: string;
+}
+
+export interface ApiFetchResult<T = unknown> {
+    ok: boolean;
+    status: number;
+    body: T | null;
+    error?: string;
+}
+
 export interface AppUpdateStatus {
     status: 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error';
     version?: string;
@@ -175,6 +193,11 @@ export interface ElectronAPI {
     openPanelAuth: (url: string) => Promise<void>;
     openExternalLink: (url: string) => Promise<void>;
     onAuthToken: (callback: ((payload: AuthTokenPayload) => void) | null) => void;
+    onAuthTokenRefreshed: (callback: ((session: AuthSessionSnapshot) => void) | null) => void;
+    onAuthSessionExpired: (callback: (() => void) | null) => void;
+    authGetSession: () => Promise<AuthSessionSnapshot | null>;
+    authSignOut: () => Promise<void>;
+    apiFetch: (url: string, init?: ApiFetchInit) => Promise<ApiFetchResult>;
     checkForAppUpdate: () => Promise<{ success: boolean; version?: string; error?: string }>;
     downloadAppUpdate: () => Promise<{ success: boolean; error?: string }>;
     installAppUpdate: () => Promise<void>;

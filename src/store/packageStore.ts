@@ -5,6 +5,7 @@ import type { Simulator } from '@/types/livery';
 import { useAuthStore } from '@/store/authStore';
 import type { InstalledPackageRecord } from '@/types/electron-api';
 import { PACKAGE_UPDATES_URL } from '@shared/constants';
+import { panelFetch } from '@/api/panelClient';
 
 const getAPI = () => (typeof window === 'undefined' ? undefined : window.electronAPI);
 
@@ -200,21 +201,17 @@ export const usePackageStore = create<PackageState>((set, get) => ({
         set({ checkingUpdates: true });
 
         try {
-            const authToken = useAuthStore.getState().token;
-            const headers: HeadersInit = { 'Content-Type': 'application/json' };
-            if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-
-            const response = await fetch(PACKAGE_UPDATES_URL, {
+            const response = await panelFetch(PACKAGE_UPDATES_URL, {
                 method: 'POST',
-                headers,
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ packages: requests })
             });
 
             if (!response.ok) {
-                throw new Error(`Package update check failed: ${response.statusText}`);
+                throw new Error(`Package update check failed: ${response.status}`);
             }
 
-            const body = (await response.json()) as {
+            const body = response.body as {
                 data?: { updates?: Array<{
                     packageId: string;
                     hasUpdate: boolean;
