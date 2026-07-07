@@ -17,6 +17,7 @@ import { usePackageStore } from '@/store/packageStore';
 import { useConfirmationStore } from '@/store/confirmationStore';
 import { buildDownloadRequestUrl, deriveInstallFolderName, joinPaths, normalizeRemoteLivery } from '@/utils/livery';
 import { REMOTE_LIVERY_LIST_URL, LIVERY_UPDATES_URL } from '@shared/constants';
+import { panelFetch, createStatusError, unwrapData } from '@/api/panelClient';
 
 const DEFAULT_SETTINGS: Settings = {
     msfs2020Path: '',
@@ -190,20 +191,15 @@ export const useLiveryStore = create<LiveryState>((set, get) => {
 
             try {
                 if (api?.fetchLiveries) {
-                    const payload = await api.fetchLiveries(authToken);
+                    const payload = await api.fetchLiveries();
                     const normalized = (payload?.liveries ?? []).map((entry) => normalizeRemoteLivery(entry as unknown as Record<string, unknown>));
                     set({ liveries: normalized });
                 } else {
-                    const response = await fetch(REMOTE_LIVERY_LIST_URL, {
-                        headers: { Authorization: `Bearer ${authToken}` }
-                    });
+                    const response = await panelFetch(REMOTE_LIVERY_LIST_URL);
                     if (!response.ok) {
-                        const error: Error & { status?: number } = new Error(`Remote list request failed with status ${response.status}`);
-                        error.status = response.status;
-                        throw error;
+                        throw createStatusError(response.status, `Remote list request failed with status ${response.status}`);
                     }
-                    const body = await response.json();
-                    const payload = body?.data ?? body;
+                    const payload = unwrapData<{ liveries?: Array<Record<string, unknown>> }>(response.body);
                     const normalized = (payload?.liveries ?? []).map((entry: Record<string, unknown>) => normalizeRemoteLivery(entry));
                     set({ liveries: normalized });
                 }
@@ -278,26 +274,17 @@ export const useLiveryStore = create<LiveryState>((set, get) => {
                 );
 
                 // Call API to check for updates
-                const authToken = useAuthStore.getState().token;
-                const headers: HeadersInit = {
-                    'Content-Type': 'application/json',
-                };
-                
-                if (authToken) {
-                    headers['Authorization'] = `Bearer ${authToken}`;
-                }
-
-                const response = await fetch(LIVERY_UPDATES_URL, {
+                const response = await panelFetch(LIVERY_UPDATES_URL, {
                     method: 'POST',
-                    headers,
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ liveries: updateRequests }),
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Update check failed: ${response.statusText}`);
+                    throw new Error(`Update check failed: ${response.status}`);
                 }
 
-                const body = await response.json() as {
+                const body = response.body as {
                     data?: { updates?: Array<{
                         liveryId: string;
                         hasUpdate: boolean;

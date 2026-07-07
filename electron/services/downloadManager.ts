@@ -3,7 +3,8 @@ import { Readable } from 'node:stream';
 import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
 import * as fs from 'fs-extra';
 import type { AppContext, DownloadProgress, DownloadResult, Settings } from '../types';
-import { fetchJson, fetchWithTimeout } from '../utils/network';
+import { createRequestError, fetchWithTimeout } from '../utils/network';
+import { getAuthManager } from './auth/authService';
 import { recordInstallation } from './installedLiveriesStore';
 import { recordPackageInstallation } from './installedPackagesStore';
 import { PANEL_BASE_URL } from '../../shared/constants';
@@ -21,7 +22,6 @@ interface DownloadLiveryOptions {
     resolution: string;
     settings: Settings;
     appContext: AppContext;
-    authToken: string | null;
 }
 
 const DOWNLOAD_ATTEMPTS = 3;
@@ -125,14 +125,13 @@ interface DownloadPackageOptions {
     simulator: 'MSFS2020' | 'MSFS2024';
     settings: Settings;
     appContext: AppContext;
-    authToken: string | null;
 }
 
 export async function downloadAndInstallPackage(options: DownloadPackageOptions): Promise<DownloadResult> {
-    const { downloadEndpoint, slug, title, version, simulator, settings, appContext, authToken } = options;
+    const { downloadEndpoint, slug, title, version, simulator, settings, appContext } = options;
     const endpoint = normalizeEndpointHost(downloadEndpoint);
 
-    if (!authToken) {
+    if (!getAuthManager().getSessionSnapshot()) {
         return { success: false, error: 'Missing authentication token. Please sign in again.' };
     }
 
@@ -152,7 +151,7 @@ export async function downloadAndInstallPackage(options: DownloadPackageOptions)
 
     try {
         const signedDownload = await retryAsync(
-            () => resolveDownloadEndpoint(endpoint, authToken, abortController.signal),
+            () => resolveDownloadEndpoint(endpoint, abortController.signal),
             RESOLVE_ATTEMPTS,
             BACKOFF_MS,
             abortController.signal
@@ -271,9 +270,9 @@ function deriveZipFilename(downloadUrl: string): string {
 }
 
 export async function downloadAndInstallLivery(options: DownloadLiveryOptions): Promise<DownloadResult> {
-    const { downloadEndpoint, liveryId, liveryName, liveryDeveloper, aircraft, simulator, resolution, settings, appContext, authToken } = options;
+    const { downloadEndpoint, liveryId, liveryName, liveryDeveloper, aircraft, simulator, resolution, settings, appContext } = options;
 
-    if (!authToken) {
+    if (!getAuthManager().getSessionSnapshot()) {
         return { success: false, error: 'Missing authentication token. Please sign in again.' };
     }
 
@@ -294,7 +293,7 @@ export async function downloadAndInstallLivery(options: DownloadLiveryOptions): 
     let extractPath = '';
 
     try {
-        const signedDownload = await retryAsync(() => resolveDownloadEndpoint(downloadEndpoint, authToken, abortController.signal), RESOLVE_ATTEMPTS, BACKOFF_MS, abortController.signal);
+        const signedDownload = await retryAsync(() => resolveDownloadEndpoint(downloadEndpoint, abortController.signal), RESOLVE_ATTEMPTS, BACKOFF_MS, abortController.signal);
         const downloadUrl = signedDownload.downloadUrl;
 
         const zipFilename = deriveZipFilename(downloadUrl);
@@ -362,7 +361,7 @@ export async function downloadAndInstallLivery(options: DownloadLiveryOptions): 
 
         // Track the download completion
         try {
-            await trackDownloadCompletion(liveryId, simulator, resolution, authToken);
+            await trackDownloadCompletion(liveryId, simulator, resolution);
         } catch (trackError) {
             console.warn('Failed to track download, but installation succeeded:', trackError);
         }
@@ -480,9 +479,12 @@ interface SignedDownloadPayload {
     version?: string;
 }
 
-async function resolveDownloadEndpoint(endpoint: string, authToken: string | null, signal?: AbortSignal): Promise<SignedDownloadPayload> {
-    const headers: HeadersInit = authToken ? { Authorization: `Bearer ${authToken}` } : {};
-    const body = await fetchJson<{ data?: SignedDownloadPayload } & SignedDownloadPayload>(endpoint, { headers, signal }, 15000);
+async function resolveDownloadEndpoint(endpoint: string, signal?: AbortSignal): Promise<SignedDownloadPayload> {
+    const response = await getAuthManager().authorizedFetch(endpoint, { signal }, 15000);
+    if (!response.ok) {
+        throw createRequestError(response, endpoint);
+    }
+    const body = (await response.json()) as { data?: SignedDownloadPayload } & SignedDownloadPayload;
     return body.data ?? body;
 }
 
@@ -534,18 +536,16 @@ function extractZip(zipPath: string, extractPath: string) {
 async function trackDownloadCompletion(
     liveryId: string,
     simulator: 'MSFS2020' | 'MSFS2024',
-    resolution: string,
-    authToken: string
+    resolution: string
 ): Promise<void> {
     const simCode = simulator === 'MSFS2024' ? 'FS24' : 'FS20';
     const trackUrl = `${PANEL_BASE_URL}/api/v2/simulator/liveries/${liveryId}/track`;
 
     try {
-        const response = await fetchWithTimeout(trackUrl, {
+        const response = await getAuthManager().authorizedFetch(trackUrl, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
                 simulator: simCode,

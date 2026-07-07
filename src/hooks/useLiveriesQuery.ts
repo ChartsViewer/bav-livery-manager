@@ -4,16 +4,11 @@ import { REMOTE_LIVERY_LIST_URL } from '@shared/constants';
 import { useAuthStore } from '@/store/authStore';
 import { useLiveryStore } from '@/store/liveryStore';
 import { normalizeRemoteLivery } from '@/utils/livery';
+import { panelFetch, createStatusError, unwrapData } from '@/api/panelClient';
 
 interface RemoteLiveryPayload {
     liveries?: Array<Record<string, unknown>>;
 }
-
-const createStatusError = (status: number, message: string) => {
-    const error: Error & { status?: number } = new Error(message);
-    error.status = status;
-    return error;
-};
 
 export const useLiveriesQuery = () => {
     const token = useAuthStore((state) => state.token);
@@ -27,10 +22,7 @@ export const useLiveriesQuery = () => {
                 throw new Error('Missing auth token');
             }
 
-            const response = await fetch(REMOTE_LIVERY_LIST_URL, {
-                headers: { Authorization: `Bearer ${token}` },
-                cache: 'no-store'
-            });
+            const response = await panelFetch(REMOTE_LIVERY_LIST_URL);
 
             if (response.status === 401 || response.status === 403) {
                 throw createStatusError(response.status, 'Unauthorized');
@@ -40,8 +32,7 @@ export const useLiveriesQuery = () => {
                 throw createStatusError(response.status, `Remote list request failed with status ${response.status}`);
             }
 
-            const body = (await response.json()) as { data?: RemoteLiveryPayload } | RemoteLiveryPayload;
-            return ('data' in (body as object) ? (body as { data: RemoteLiveryPayload }).data : body) as RemoteLiveryPayload;
+            return unwrapData<RemoteLiveryPayload>(response.body);
         },
         select: (data) => (data.liveries ?? []).map((entry) => normalizeRemoteLivery(entry as Record<string, unknown>)),
         refetchOnWindowFocus: false,
