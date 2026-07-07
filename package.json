@@ -58,7 +58,7 @@
     "electron": "42.3.3",
     "electron-builder": "^26.15.2",
     "icon-gen": "^5.0.0",
-    "png-to-ico": "^3.0.1",
+    "png-to-ico": "^3.0.2",
     "sharp": "^0.35.2",
     "typescript": "^6.0.3",
     "vite": "^8.1.0",
